@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Match Invitation 🏏</title>
+    <!-- Canvas Confetti Library for Party Popper Effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1b5e20, #0d3b12);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Watermark in the middle */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 3rem;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.04);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            letter-spacing: 5px;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            border: 2px solid #4caf50;
+            border-radius: 20px;
+            padding: 25px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #ffeb3b;
+        }
+
+        .match-details {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .match-details span {
+            color: #81c784;
+            font-weight: bold;
+        }
+
+        .question {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-yes {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .btn-yes:hover {
+            background-color: #43a047;
+        }
+
+        .btn-no {
+            background-color: #e53935;
+            color: white;
+        }
+
+        .btn-no:hover {
+            background-color: #d32f2f;
+        }
+
+        /* Message Box & Suggestion Box */
+        .response-msg {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .suggestion-section {
+            margin-top: 20px;
+            display: none;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .suggestion-section h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #ffeb3b;
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background: rgba(255, 255, 255, 0.9);
+            color: #000;
+            resize: none;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: #ff9800;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .submit-btn:hover {
+            background-color: #f57c00;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Watermark -->
+    <div class="watermark">VEDANSHXCODES</div>
+
+    <div class="container">
+        <h1>🏏 Tomorrow's Cricket Match!</h1>
+        
+        <div class="match-details">
+            <p>📍 <strong>Venue:</strong> BLUESTAR PARK</p>
+            <p>⏰ <strong>Time:</strong> TOMORROW AT 5:00 AM</p>
+            <p>Meeting Point: GALI OUTSKRITS</p>
+        </div>
+
+        <div class="question">Are you coming?</div>
+
+        <div class="btn-group">
+            <button class="btn-yes" onclick="handleYes()">YES</button>
+            <button class="btn-no" onclick="handleNo()">NO</button>
+        </div>
+
+        <!-- Short Messages & Form Container -->
+        <div id="msgBox" class="response-msg"></div>
+
+        <div id="suggestionSection" class="suggestion-section">
+            <h3>Suggest Team Formation (3v3)</h3>
+            <!-- Form spree integrated form -->
+            <form action="https://formspree.io/f/mgawdqro" method="POST">
+                <input type="hidden" name="Response" value="Attending (YES)">
+                <textarea name="team_formation_suggestion" placeholder="Write your 3v3 squad names or formation strategy here..." required></textarea>
+                <button type="submit" class="submit-btn">Send Suggestion</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function handleYes() {
+            // Trigger Party Popper Confetti
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+
+            const msgBox = document.getElementById('msgBox');
+            msgBox.style.display = 'block';
+            msgBox.style.color = '#4caf50';
+            msgBox.innerHTML = "GREAT ! GET READY TOMORROW AT 5 AM";
+
+            // Show 3v3 suggestion box
+            document.getElementById('suggestionSection').style.display = 'block';
+        }
+
+        function handleNo() {
+            const msgBox = document.getElementById('msgBox');
+            msgBox.style.display = 'block';
+            msgBox.style.color = '#ff5252';
+            msgBox.innerHTML = "GHARE JAKE SUTTI BABU 😴";
+
+            // Hide suggestion box if they select No
+            document.getElementById('suggestionSection').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
