@@ -1,240 +1,477 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cricket Match Invitation 🏏</title>
-    <!-- Canvas Confetti Library for Party Popper Effect -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <title>TaskVibe - Smart Reminders</title>
+    <!-- Google Fonts & Confetti Library for Party Popper -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #1b5e20, #0d3b12);
-            color: #ffffff;
+            background: var(--bg-gradient);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: space-between;
             padding: 20px;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Watermark in the middle */
-        .watermark {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-30deg);
-            font-size: 3rem;
-            font-weight: 900;
-            color: rgba(255, 255, 255, 0.04);
-            white-space: nowrap;
-            pointer-events: none;
-            z-index: 0;
-            letter-spacing: 5px;
         }
 
         .container {
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(10px);
-            border: 2px solid #4caf50;
-            border-radius: 20px;
-            padding: 25px;
             width: 100%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 1;
-            position: relative;
+            max-width: 500px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            margin-top: 20px;
         }
 
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 15px;
-            color: #ffeb3b;
-        }
-
-        .match-details {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
+        /* Live Clock Box */
+        .live-clock-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            margin-bottom: 20px;
-            text-align: left;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 24px;
             font-size: 0.95rem;
-            line-height: 1.6;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
         }
 
-        .match-details span {
-            color: #81c784;
-            font-weight: bold;
-        }
-
-        .question {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
+        .live-clock-box span {
+            color: var(--text-main);
             font-weight: 600;
         }
 
-        .btn-group {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        button {
-            padding: 12px 25px;
-            font-size: 1rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        .btn-yes {
-            background-color: #4caf50;
-            color: white;
-        }
-
-        .btn-yes:hover {
-            background-color: #43a047;
-        }
-
-        .btn-no {
-            background-color: #e53935;
-            color: white;
-        }
-
-        .btn-no:hover {
-            background-color: #d32f2f;
-        }
-
-        /* Message Box & Suggestion Box */
-        .response-msg {
-            margin-top: 15px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            padding: 10px;
-            border-radius: 8px;
-            display: none;
-        }
-
-        .suggestion-section {
-            margin-top: 20px;
-            display: none;
-            text-align: left;
-            background: rgba(255, 255, 255, 0.08);
-            padding: 15px;
-            border-radius: 12px;
-        }
-
-        .suggestion-section h3 {
-            font-size: 1rem;
-            margin-bottom: 10px;
-            color: #ffeb3b;
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 8px;
             text-align: center;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
+        p.subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+        }
+
+        input[type="text"],
+        input[type="datetime-local"],
         textarea {
             width: 100%;
-            height: 80px;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            background: rgba(255, 255, 255, 0.9);
-            color: #000;
-            resize: none;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        button.btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.1s ease;
+            margin-top: 8px;
+        }
+
+        button.btn:hover {
+            background: var(--primary-hover);
+        }
+
+        button.btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Active Tasks List */
+        .task-list {
+            margin-top: 24px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .task-item {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
             margin-bottom: 10px;
+        }
+
+        .task-info {
             font-size: 0.9rem;
         }
 
-        .submit-btn {
-            width: 100%;
-            background-color: #ff9800;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.95rem;
+        .task-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
         }
 
-        .submit-btn:hover {
-            background-color: #f57c00;
+        .btn-complete {
+            background: #ef4444;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            align-self: flex-end;
+            transition: background 0.2s;
+        }
+
+        .btn-complete:hover {
+            background: #dc2626;
+        }
+
+        /* Modals / Popups */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: #1e1b4b;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        .modal h2 {
+            margin-bottom: 12px;
+            font-size: 1.5rem;
+        }
+
+        .modal p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        /* Feedback Section */
+        .feedback-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .feedback-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .feedback-toggle:hover {
+            color: var(--text-main);
+        }
+
+        .feedback-form {
+            display: none;
+            margin-top: 10px;
+            text-align: left;
+        }
+
+        /* Watermark */
+        .watermark {
+            margin-top: 20px;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            color: rgba(148, 163, 184, 0.4);
+            text-transform: lowercase;
+            font-weight: 500;
+            position: relative;
+            bottom: 5px;
         }
     </style>
 </head>
 <body>
 
-    <!-- Watermark -->
-    <div class="watermark">VEDANSHXCODES</div>
+    <!-- Welcome Name Modal (Shown Initially) -->
+    <div id="welcomeModal" class="modal-overlay">
+        <div class="modal">
+            <h2>👋 Welcome to TaskVibe!</h2>
+            <p>Please enter your name to continue:</p>
+            <div class="form-group">
+                <input type="text" id="userNameInput" placeholder="Your Name...">
+            </div>
+            <button class="btn" id="continueBtn">Continue</button>
+        </div>
+    </div>
 
+    <!-- Feedback Reminder Modal (Hidden Initially) -->
+    <div id="feedbackModal" class="modal-overlay" style="display: none;">
+        <div class="modal">
+            <h2>✨ Reminder!</h2>
+            <p>Also give your feedback and any kind of suggestion. It helps Vedansh a lot to improve from the feedback option below.</p>
+            <button class="btn" id="closeModalBtn">Thank you, Close</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
     <div class="container">
-        <h1>🏏 Tomorrow's Cricket Match!</h1>
-        
-        <div class="match-details">
-            <p>📍 <strong>Venue:</strong> BLUESTAR PARK</p>
-            <p>⏰ <strong>Time:</strong> TOMORROW AT 5:00 AM</p>
-            <p>Meeting Point: GALI OUTSKRITS</p>
+        <!-- Live Clock & Date Box -->
+        <div class="live-clock-box">
+            📅 <span id="currentDateDisplay">Loading...</span> | ⏰ <span id="currentTimeDisplay">Loading...</span>
         </div>
 
-        <div class="question">Are you coming?</div>
+        <h1>TaskVibe</h1>
+        <p class="subtitle" id="greetingSubtitle">Manage your duties seamlessly</p>
 
-        <div class="btn-group">
-            <button class="btn-yes" onclick="handleYes()">YES</button>
-            <button class="btn-no" onclick="handleNo()">NO</button>
+        <!-- Task Creator Form -->
+        <div class="form-group">
+            <label for="taskName">Work / Task Description</label>
+            <input type="text" id="taskName" placeholder="What do you want to do?">
+        </div>
+        <div class="form-group">
+            <label for="taskTime">Set Date & Time</label>
+            <input type="datetime-local" id="taskTime">
+        </div>
+        <button class="btn" id="setTaskBtn">Set Reminder</button>
+
+        <!-- Active Tasks Manager -->
+        <div class="task-list">
+            <label>Active Reminders</label>
+            <div id="activeTasksContainer">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">No active tasks scheduled.</p>
+            </div>
         </div>
 
-        <!-- Short Messages & Form Container -->
-        <div id="msgBox" class="response-msg"></div>
-
-        <div id="suggestionSection" class="suggestion-section">
-            <h3>Suggest Team Formation (3v3)</h3>
-            <!-- Form spree integrated form -->
-            <form action="https://formspree.io/f/mgawdqro" method="POST">
-                <input type="hidden" name="Response" value="Attending (YES)">
-                <textarea name="team_formation_suggestion" placeholder="Write your 3v3 squad names or formation strategy here..." required></textarea>
-                <button type="submit" class="submit-btn">Send Suggestion</button>
+        <!-- Feedback Dropdown Toggle -->
+        <div class="feedback-section">
+            <button class="feedback-toggle" id="feedbackToggleBtn">Give Feedback / Suggestions</button>
+            <form id="feedbackForm" class="feedback-form" action="https://formspree.io/f/mgawdqro" method="POST">
+                <div class="form-group" style="margin-top: 10px;">
+                    <textarea name="feedback" rows="3" placeholder="What can I improve in this site?" required></textarea>
+                </div>
+                <button type="submit" class="btn" style="padding: 8px; font-size: 0.9rem;">Send Feedback</button>
             </form>
         </div>
     </div>
 
+    <!-- Watermark -->
+    <div class="watermark">vedanshxcodes</div>
+
     <script>
-        function handleYes() {
-            // Trigger Party Popper Confetti
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
+        let tasks = JSON.parse(localStorage.getItem('taskvibe_tasks')) || [];
+        let currentUserName = localStorage.getItem('taskvibe_username') || '';
 
-            const msgBox = document.getElementById('msgBox');
-            msgBox.style.display = 'block';
-            msgBox.style.color = '#4caf50';
-            msgBox.innerHTML = "GREAT ! GET READY TOMORROW AT 5 AM";
+        // Live Clock and Date Engine
+        function updateClock() {
+            const now = new Date();
+            const optionsDate = { month: 'short', day: 'numeric', year: 'numeric' };
+            document.getElementById('currentDateDisplay').innerText = now.toLocaleDateString('en-US', optionsDate);
+            document.getElementById('currentTimeDisplay').innerText = now.toLocaleTimeString('en-US');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-            // Show 3v3 suggestion box
-            document.getElementById('suggestionSection').style.display = 'block';
+        // Initialization on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (currentUserName) {
+                document.getElementById('welcomeModal').style.display = 'none';
+                updateGreetingSubtitle(currentUserName);
+            } else {
+                document.getElementById('welcomeModal').style.display = 'flex';
+            }
+
+            renderTasks();
+            requestNotificationPermission();
+
+            // Event Bindings
+            document.getElementById('continueBtn').addEventListener('click', handleNameSubmission);
+            document.getElementById('setTaskBtn').addEventListener('click', scheduleTask);
+            document.getElementById('feedbackToggleBtn').addEventListener('click', toggleFeedback);
+            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+        });
+
+        function handleNameSubmission() {
+            const nameInput = document.getElementById('userNameInput').value.trim();
+            if(!nameInput) {
+                alert("Please enter your name to continue!");
+                return;
+            }
+            currentUserName = nameInput;
+            localStorage.setItem('taskvibe_username', currentUserName);
+            document.getElementById('welcomeModal').style.display = 'none';
+            updateGreetingSubtitle(currentUserName);
         }
 
-        function handleNo() {
-            const msgBox = document.getElementById('msgBox');
-            msgBox.style.display = 'block';
-            msgBox.style.color = '#ff5252';
-            msgBox.innerHTML = "GHARE JAKE SUTTI BABU 😴";
+        function updateGreetingSubtitle(name) {
+            document.getElementById('greetingSubtitle').innerText = `Hey! ${name} what you have to remember today??`;
+        }
 
-            // Hide suggestion box if they select No
-            document.getElementById('suggestionSection').style.display = 'none';
+        function requestNotificationPermission() {
+            if ("Notification" in window && Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        }
+
+        function scheduleTask() {
+            const text = document.getElementById('taskName').value.trim();
+            const time = document.getElementById('taskTime').value;
+
+            if(!text || !time) {
+                alert("Please fill in both the task name and time!");
+                return;
+            }
+
+            tasks.push({
+                id: Date.now(),
+                text: text,
+                time: time,
+                notified: false
+            });
+
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskTime').value = '';
+            saveAndRender();
+
+            // Trigger Party Popper Blast
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            // Show Feedback Popup Modal
+            document.getElementById('feedbackModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('feedbackModal').style.display = 'none';
+        }
+
+        window.removeTask = function(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveAndRender();
+        };
+
+        function saveAndRender() {
+            localStorage.setItem('taskvibe_tasks', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('activeTasksContainer');
+            if(tasks.length === 0) {
+                container.innerHTML = `<p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">No active tasks scheduled.</p>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            tasks.forEach(task => {
+                const dateObj = new Date(task.time);
+                const formattedTimeStr = dateObj.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+                const item = document.createElement('div');
+                item.className = 'task-item';
+                item.innerHTML = `
+                    <div class="task-info"><strong>${task.text}</strong></div>
+                    <div class="task-time">Scheduled for: ${formattedTimeStr}</div>
+                    <button class="btn-complete" onclick="removeTask(${task.id})">Turn Off / Complete</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Background checker for active notifications
+        setInterval(() => {
+            const now = new Date().getTime();
+            tasks.forEach(task => {
+                const taskTime = new Date(task.time).getTime();
+                if(!task.notified && now >= taskTime) {
+                    task.notified = true;
+                    saveAndRender();
+                    
+                    const notificationText = `You have to ${task.text}`;
+                    if ("Notification" in window && Notification.permission === "granted") {
+                        new Notification("TaskVibe Reminder", {
+                            body: notificationText,
+                            icon: "https://cdn-icons-png.flaticon.com/512/3233/3233483.png"
+                        });
+                    } else {
+                        alert(notificationText);
+                    }
+                }
+            });
+        }, 10000);
+
+        function toggleFeedback() {
+            const form = document.getElementById('feedbackForm');
+            form.style.display = form.style.display === 'block' ? 'none' : 'block';
         }
     </script>
 </body>
