@@ -1,11 +1,17 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TaskVibe - Smart Reminders</title>
-    <!-- Google Fonts & Confetti Library for Party Popper -->
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+
     <style>
         :root {
             --primary: #6366f1;
@@ -47,22 +53,24 @@
             margin-top: 20px;
         }
 
-        /* Live Clock Box */
         .live-clock-box {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 8px;
+            padding: 6px 12px;
             text-align: center;
-            margin-bottom: 24px;
-            font-size: 0.95rem;
+            margin-bottom: 20px;
+            font-size: 0.78rem;
             color: var(--text-muted);
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .live-clock-box span {
             color: var(--text-main);
-            font-weight: 600;
+            font-weight: 500;
         }
 
         h1 {
@@ -135,7 +143,6 @@
             transform: scale(0.98);
         }
 
-        /* Active Tasks List */
         .task-list {
             margin-top: 24px;
             border-top: 1px solid var(--border);
@@ -178,7 +185,6 @@
             background: #dc2626;
         }
 
-        /* Modals / Popups */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -217,7 +223,6 @@
             line-height: 1.4;
         }
 
-        /* Feedback Section */
         .feedback-section {
             margin-top: 20px;
             text-align: center;
@@ -242,7 +247,6 @@
             text-align: left;
         }
 
-        /* Watermark */
         .watermark {
             margin-top: 20px;
             font-size: 0.75rem;
@@ -257,7 +261,6 @@
 </head>
 <body>
 
-    <!-- Welcome Name Modal (Shown Initially) -->
     <div id="welcomeModal" class="modal-overlay">
         <div class="modal">
             <h2>👋 Welcome to TaskVibe!</h2>
@@ -269,7 +272,6 @@
         </div>
     </div>
 
-    <!-- Feedback Reminder Modal (Hidden Initially) -->
     <div id="feedbackModal" class="modal-overlay" style="display: none;">
         <div class="modal">
             <h2>✨ Reminder!</h2>
@@ -278,9 +280,7 @@
         </div>
     </div>
 
-    <!-- Main Container -->
     <div class="container">
-        <!-- Live Clock & Date Box -->
         <div class="live-clock-box">
             📅 <span id="currentDateDisplay">Loading...</span> | ⏰ <span id="currentTimeDisplay">Loading...</span>
         </div>
@@ -288,7 +288,6 @@
         <h1>TaskVibe</h1>
         <p class="subtitle" id="greetingSubtitle">Manage your duties seamlessly</p>
 
-        <!-- Task Creator Form -->
         <div class="form-group">
             <label for="taskName">Work / Task Description</label>
             <input type="text" id="taskName" placeholder="What do you want to do?">
@@ -299,7 +298,6 @@
         </div>
         <button class="btn" id="setTaskBtn">Set Reminder</button>
 
-        <!-- Active Tasks Manager -->
         <div class="task-list">
             <label>Active Reminders</label>
             <div id="activeTasksContainer">
@@ -307,7 +305,6 @@
             </div>
         </div>
 
-        <!-- Feedback Dropdown Toggle -->
         <div class="feedback-section">
             <button class="feedback-toggle" id="feedbackToggleBtn">Give Feedback / Suggestions</button>
             <form id="feedbackForm" class="feedback-form" action="https://formspree.io/f/mgawdqro" method="POST">
@@ -319,36 +316,50 @@
         </div>
     </div>
 
-    <!-- Watermark -->
     <div class="watermark">vedanshxcodes</div>
 
     <script>
+        // FIREBASE INITIALIZATION - REPLACE WITH YOUR CREDENTIALS
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        const VAPID_KEY = "YOUR_VAPID_PUBLIC_KEY";
+
+        firebase.initializeApp(firebaseConfig);
+        let messaging;
+        
+        if (firebase.messaging.isSupported()) {
+            messaging = firebase.messaging();
+        }
+
         let tasks = JSON.parse(localStorage.getItem('taskvibe_tasks')) || [];
         let currentUserName = localStorage.getItem('taskvibe_username') || '';
 
-        // Live Clock and Date Engine
         function updateClock() {
             const now = new Date();
             const optionsDate = { month: 'short', day: 'numeric', year: 'numeric' };
             document.getElementById('currentDateDisplay').innerText = now.toLocaleDateString('en-US', optionsDate);
-            document.getElementById('currentTimeDisplay').innerText = now.toLocaleTimeString('en-US');
+            document.getElementById('currentTimeDisplay').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Initialization on Load
         window.addEventListener('DOMContentLoaded', () => {
             if (currentUserName) {
                 document.getElementById('welcomeModal').style.display = 'none';
                 updateGreetingSubtitle(currentUserName);
+                initPushNotifications();
             } else {
                 document.getElementById('welcomeModal').style.display = 'flex';
             }
 
             renderTasks();
-            requestNotificationPermission();
 
-            // Event Bindings
             document.getElementById('continueBtn').addEventListener('click', handleNameSubmission);
             document.getElementById('setTaskBtn').addEventListener('click', scheduleTask);
             document.getElementById('feedbackToggleBtn').addEventListener('click', toggleFeedback);
@@ -365,15 +376,24 @@
             localStorage.setItem('taskvibe_username', currentUserName);
             document.getElementById('welcomeModal').style.display = 'none';
             updateGreetingSubtitle(currentUserName);
+            initPushNotifications();
         }
 
         function updateGreetingSubtitle(name) {
-            document.getElementById('greetingSubtitle').innerText = `Hey! ${name} what you have to remember today??`;
+            document.getElementById('greetingSubtitle').innerText = `Hey! ${name} what do you have to remember today?`;
         }
 
-        function requestNotificationPermission() {
-            if ("Notification" in window && Notification.permission !== "granted") {
-                Notification.requestPermission();
+        async function initPushNotifications() {
+            if (!messaging) return;
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+                    const token = await messaging.getToken({ serviceWorkerRegistration: registration, vapidKey: VAPID_KEY });
+                    localStorage.setItem('fcm_token', token);
+                }
+            } catch (err) {
+                console.log("Push Notification registration error:", err);
             }
         }
 
@@ -397,7 +417,6 @@
             document.getElementById('taskTime').value = '';
             saveAndRender();
 
-            // Trigger Party Popper Blast
             if (typeof confetti === 'function') {
                 confetti({
                     particleCount: 120,
@@ -406,7 +425,6 @@
                 });
             }
 
-            // Show Feedback Popup Modal
             document.getElementById('feedbackModal').style.display = 'flex';
         }
 
@@ -447,7 +465,17 @@
             });
         }
 
-        // Background checker for active notifications
+        // Handles foreground notifications when the tab is open
+        if (messaging) {
+            messaging.onMessage((payload) => {
+                new Notification(payload.notification.title || "TaskVibe Reminder", {
+                    body: payload.notification.body,
+                    icon: "https://cdn-icons-png.flaticon.com/512/3233/3233483.png"
+                });
+            });
+        }
+
+        // Local backup timer when app remains active
         setInterval(() => {
             const now = new Date().getTime();
             tasks.forEach(task => {
@@ -455,19 +483,15 @@
                 if(!task.notified && now >= taskTime) {
                     task.notified = true;
                     saveAndRender();
-                    
-                    const notificationText = `You have to ${task.text}`;
-                    if ("Notification" in window && Notification.permission === "granted") {
-                        new Notification("TaskVibe Reminder", {
-                            body: notificationText,
+                    if (Notification.permission === "granted") {
+                        new Notification("TaskVibe Reminder ⏰", {
+                            body: `You have to ${task.text}`,
                             icon: "https://cdn-icons-png.flaticon.com/512/3233/3233483.png"
                         });
-                    } else {
-                        alert(notificationText);
                     }
                 }
             });
-        }, 10000);
+        }, 1000);
 
         function toggleFeedback() {
             const form = document.getElementById('feedbackForm');
