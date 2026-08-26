@@ -36,13 +36,11 @@
   }
   h1,h2,h3,.brand,.clock-time{ font-family:'Space Grotesk', sans-serif; }
 
-  /* floating orbs ambience */
   .orb{ position:fixed; border-radius:50%; filter:blur(70px); opacity:.35; pointer-events:none; z-index:0; }
   .orb1{ width:280px; height:280px; background:var(--violet); top:-80px; left:-60px; animation: drift 14s ease-in-out infinite; }
   .orb2{ width:320px; height:320px; background:var(--cyan); bottom:-100px; right:-80px; animation: drift 18s ease-in-out infinite reverse; }
   @keyframes drift{ 0%,100%{ transform:translateY(0) translateX(0);} 50%{ transform:translateY(30px) translateX(20px);} }
 
-  /* watermark */
   .watermark{
     position:fixed;
     top:14px;
@@ -70,7 +68,6 @@
     font-weight:700;
   }
 
-  /* layout */
   .app{
     position:relative;
     z-index:1;
@@ -94,7 +91,6 @@
   }
   .sub{ color:var(--muted); font-size:14px; margin-top:8px; }
 
-  /* live clock widget */
   .clock-widget {
     background: var(--glass);
     border: 1px solid var(--glass-brd);
@@ -125,7 +121,6 @@
     text-transform: uppercase;
   }
 
-  /* glass cards */
   .card{
     background:var(--glass);
     border:1px solid var(--glass-brd);
@@ -177,7 +172,6 @@
     color:var(--text);
   }
 
-  /* fired-reminder toast */
   .toast{
     position:fixed;
     left:50%;
@@ -203,7 +197,6 @@
 
   .row{ display:flex; gap:10px; margin-top:14px; }
 
- /* buttons */
   .btn{
     border:none;
     cursor:pointer;
@@ -230,8 +223,7 @@
   .btn-ghost:hover{ background:rgba(255,255,255,0.06); }
   .btn-small{ padding:8px 14px; font-size:12px; }
 
-  /* reminders list */
-  .reminder-item{
+.reminder-item{
     display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
     padding:12px 14px;
     background:rgba(255,255,255,0.04);
@@ -247,7 +239,6 @@
   }
   .empty-state{ color:var(--muted); font-size:13px; text-align:center; padding:10px 0; }
 
-  /* overlay / modals */
   .overlay{
     position:fixed; inset:0; z-index:100;
     background:rgba(6,4,18,0.72);
@@ -300,7 +291,6 @@
 
   <div class="watermark">by <span>vedanshxcode</span></div>
 
-  <!-- MODAL 1 : ASK NAME -->
   <div class="overlay show" id="nameOverlay">
     <div class="modal">
       <div class="glyph">✨</div>
@@ -313,7 +303,6 @@
     </div>
   </div>
 
-  <!-- MODAL 2 : THANK YOU / FEEDBACK NUDGE -->
   <div class="overlay" id="thanksOverlay">
     <div class="modal">
       <div class="glyph">🙏</div>
@@ -331,7 +320,6 @@
     <span id="toastText"></span>
   </div>
 
-  <!-- MAIN APP -->
   <div class="app" id="mainApp">
     <header class="hero">
       <span class="eyebrow">Task Vide</span>
@@ -375,9 +363,7 @@
   </div>
 
 <script>
-  // Applied Credentials
   const ONESIGNAL_APP_ID = '2a9969d4-d351-4e97-8615-de5342cda310';
-  const ONESIGNAL_REST_API_KEY = 'nyleswi5aelffupswbmcpexfj';
 
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async function(OneSignal) {
@@ -454,14 +440,14 @@
     renderReminders();
   }
 
-  function startApp(){
+  async function startApp(){
     const val = nameInput.value.trim();
     if(val) userName = val;
     greetLine.textContent = `Hey ${userName}! What do you want to remember today??`;
     nameOverlay.classList.remove('show');
     setTimeout(()=> mainApp.classList.add('show'), 150);
 
-    // Request native push notifications right on first user gesture
+    // Request native permission via OneSignal SDK safely
     if (window.OneSignalDeferred) {
       window.OneSignalDeferred.push(async function(OneSignal) {
         try {
@@ -474,10 +460,9 @@
   nameInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') startApp(); });
 
   function formatMeta(r){
-    if(r.status === "failed") return '❌ FAILED TO NOTIFY (Permission or API Error)';
+    if(r.status === "failed") return '❌ Notification Blocked (Allow notifications in browser)';
     if(r.status === "sent") return '✅ Notified at ' + r.targetLabel;
-    if(r.targetDate && r.pushScheduled) return '🔔 Active — Push scheduled for ' + r.targetLabel;
-    if(r.targetDate) return '⏰ Scheduled locally for ' + r.targetLabel;
+    if(r.targetDate) return '🔔 Active — Scheduled for ' + r.targetLabel;
     return r.targetLabel;
   }
 
@@ -508,28 +493,6 @@
     });
   }
 
-  async function scheduleServerPush(text, targetDate){
-    try{
-      const res = await fetch('https://onesignal.com/api/v1/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
-        },
-        body: JSON.stringify({
-          app_id: ONESIGNAL_APP_ID,
-          included_segments: ['Subscribed Users'],
-          headings: { en: 'Task Vide' },
-          contents: { en: text },
-          send_after: targetDate.toISOString()
-        })
-      });
-      return res.ok;
-    } catch(e){
-      return false;
-    }
-  }
-
   setReminderBtn.addEventListener('click', async ()=>{
     const val = taskInput.value.trim();
     if(!val){
@@ -556,7 +519,7 @@
 
     reminderNote.style.display = 'none';
 
-    // Verify browser permissions before proceeding
+    // Verify browser notification status
     let permissionGranted = false;
     if ('Notification' in window) {
       if (Notification.permission === 'granted') {
@@ -573,14 +536,12 @@
       targetDate: targetDate,
       targetLabel: targetLabel,
       status: permissionGranted ? "pending" : "failed",
-      pushScheduled: false,
       timeoutId: null
     };
 
     if(targetDate && permissionGranted){
       const delay = targetDate.getTime() - now.getTime();
       reminderObj.timeoutId = setTimeout(()=> fireReminder(reminderObj), delay);
-      reminderObj.pushScheduled = await scheduleServerPush(val, targetDate);
     }
 
     reminders.push(reminderObj);
