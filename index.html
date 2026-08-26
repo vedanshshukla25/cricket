@@ -6,6 +6,7 @@
 <title>Task Vide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
 <style>
   :root{
     --bg-1: #0a0a1a;
@@ -125,6 +126,61 @@
   }
   #taskInput{ min-height:90px; }
   #feedbackInput{ min-height:130px; }
+
+  .field-label{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin:14px 0 8px;
+    letter-spacing:.3px;
+  }
+  input[type=datetime-local]{
+    color-scheme: dark;
+    font-family:'Inter', sans-serif;
+  }
+
+  /* ---------- fired-reminder toast ---------- */
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:26px;
+    transform:translateX(-50%) translateY(20px);
+    z-index:200;
+    min-width:260px;
+    max-width:90vw;
+    background:linear-gradient(135deg, rgba(139,92,246,0.95), rgba(34,211,238,0.9));
+    color:#0a0a1a;
+    padding:14px 18px;
+    border-radius:14px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.45);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .3s ease, transform .3s ease;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+  .toast .toast-label{ font-size:10px; letter-spacing:2px; text-transform:uppercase; opacity:.7; display:block; margin-bottom:2px; }
+
+  /* ---------- setup banner ---------- */
+  .setup-banner{
+    background:rgba(244,114,182,0.12);
+    border:1px solid rgba(244,114,182,0.4);
+    color:#fbcfe8;
+    font-size:12.5px;
+    line-height:1.6;
+    padding:14px 16px;
+    border-radius:14px;
+    margin-bottom:22px;
+  }
+  .setup-banner b{ color:#fff; }
+  .setup-banner code{
+    background:rgba(0,0,0,0.3);
+    padding:1px 6px;
+    border-radius:6px;
+    font-size:11.5px;
+  }
 
   .row{ display:flex; gap:10px; margin-top:14px; }
 
@@ -251,6 +307,11 @@
     </div>
   </div>
 
+  <div class="toast" id="toast">
+    <span class="toast-label">Task Vide reminder</span>
+    <span id="toastText"></span>
+  </div>
+
   <!-- ============ MAIN APP ============ -->
   <div class="app" id="mainApp">
     <header class="hero">
@@ -259,12 +320,19 @@
       <p class="sub">Type it below and set a reminder — I'll keep it right here for you.</p>
     </header>
 
+    <div class="setup-banner" id="setupBanner" style="display:none;">
+      🔔 <b>Real push notifications aren't set up yet.</b> Reminders will still work while this tab stays open, but won't survive closing the tab/browser until you add your OneSignal keys in <code>task-vide.html</code>. See <code>SETUP.md</code> in the download.
+    </div>
+
     <section class="card">
       <h2>💭 What should I remember?</h2>
       <textarea id="taskInput" placeholder="e.g. Call mom, submit the report, drink water..."></textarea>
+      <label class="field-label" for="reminderDateTime">When should I remind you?</label>
+      <input type="datetime-local" id="reminderDateTime">
       <div class="row">
         <button class="btn btn-primary" id="setReminderBtn">Set Reminder</button>
       </div>
+      <p class="sub" id="reminderNote" style="margin-top:10px; display:none;"></p>
     </section>
 
     <section class="card">
@@ -287,6 +355,13 @@
   </div>
 
 <script>
+  // ====== ONESIGNAL SETUP — paste your own values here ======
+  // Get these from onesignal.com after creating a free app (see SETUP.md)
+  const ONESIGNAL_APP_ID = '2a9969d4-d351-4e97-8615-de5342cda310';
+  const ONESIGNAL_REST_API_KEY = 'nyleswi5aelffupswbmcpexfj';
+  const PUSH_CONFIGURED = !ONESIGNAL_APP_ID.startsWith('YOUR_') && !ONESIGNAL_REST_API_KEY.startsWith('YOUR_');
+  // =============================================================
+
   let userName = "there";
 
   const nameOverlay = document.getElementById('nameOverlay');
@@ -295,9 +370,75 @@
   const mainApp = document.getElementById('mainApp');
   const greetLine = document.getElementById('greetLine');
 
+  const setupBanner = document.getElementById('setupBanner');
+  if(!PUSH_CONFIGURED){
+    setupBanner.style.display = 'block';
+  } else if (window.OneSignalDeferred) {
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({ appId: ONESIGNAL_APP_ID, allowLocalhostAsSecureOrigin: true });
+    });
+  }
+
   const taskInput = document.getElementById('taskInput');
+  const reminderDateTime = document.getElementById('reminderDateTime');
   const setReminderBtn = document.getElementById('setReminderBtn');
   const remindersList = document.getElementById('remindersList');
+  const reminderNote = document.getElementById('reminderNote');
+  const toast = document.getElementById('toast');
+  const toastText = document.getElementById('toastText');
+
+  // ask for notification permission as early as possible (needs a user gesture on most browsers,
+  // so we also re-request right when a reminder is actually set)
+  if('Notification' in window && Notification.permission === 'default'){
+    // silent attempt; browsers may ignore this until a real user gesture happens
+  }
+
+  function showToast(text){
+    toastText.textContent = text;
+    toast.classList.add('show');
+    setTimeout(()=> toast.classList.remove('show'), 6000);
+  }
+
+  // simple app icon rendered as an inline SVG data URI, used as the notification icon
+  const APP_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#8b5cf6"/>
+          <stop offset="1" stop-color="#22d3ee"/>
+        </linearGradient>
+      </defs>
+      <rect width="128" height="128" rx="28" fill="url(#g)"/>
+      <text x="64" y="86" font-size="64" text-anchor="middle" font-family="sans-serif">⏰</text>
+    </svg>
+  `);
+
+  function fireReminder(reminderObj){
+    let shownNatively = false;
+
+    if('Notification' in window && Notification.permission === 'granted'){
+      try{
+        const n = new Notification('Task Vide', {
+          body: reminderObj.text,
+          icon: APP_ICON,
+          badge: APP_ICON,
+          tag: 'task-vide-' + reminderObj.id,
+          requireInteraction: true,
+          silent: false
+        });
+        n.onclick = () => { window.focus(); n.close(); };
+        shownNatively = true;
+      } catch(e){ shownNatively = false; }
+    }
+
+    if(navigator.vibrate){ navigator.vibrate([120, 60, 120]); }
+
+    // only use the in-page toast as a fallback when a real OS notification couldn't be shown
+    if(!shownNatively){ showToast(reminderObj.text); }
+
+    reminderObj.fired = true;
+    renderReminders();
+  }
 
   const thanksOverlay = document.getElementById('thanksOverlay');
   const closeThanks = document.getElementById('closeThanks');
@@ -309,6 +450,7 @@
   const feedbackCard = document.getElementById('feedbackCard');
 
   let reminders = [];
+  let nextId = 1;
 
   // ---- Step 1: capture name, close modal, reveal app ----
   function startApp(){
@@ -317,32 +459,81 @@
     greetLine.textContent = `Hey ${userName}! What do you want to remember today??`;
     nameOverlay.classList.remove('show');
     setTimeout(()=> mainApp.classList.add('show'), 150);
+
+    // ask for browser notification permission right here — this click is a genuine
+    // user gesture, which is what browsers require to reliably grant it
+    if('Notification' in window && Notification.permission === 'default'){
+      Notification.requestPermission();
+    }
+
+    // ask OneSignal to subscribe this device to push (survives tab/browser close)
+    if(PUSH_CONFIGURED && window.OneSignalDeferred){
+      window.OneSignalDeferred.push(async function(OneSignal){
+        try{ await OneSignal.Notifications.requestPermission(); } catch(e){}
+      });
+    }
   }
   closeNameModal.addEventListener('click', startApp);
   nameInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') startApp(); });
 
   // ---- Step 2: set reminder ----
+  function formatMeta(r){
+    if(r.fired) return '✅ Notified at ' + r.targetLabel;
+    if(r.targetDate && r.pushScheduled) return '🔔 Will notify (even if closed) at ' + r.targetLabel;
+    if(r.targetDate) return '⏰ Scheduled for ' + r.targetLabel;
+    return r.targetLabel;
+  }
+
   function renderReminders(){
     if(reminders.length === 0){
       remindersList.innerHTML = '<p class="empty-state">Nothing yet — add your first one above.</p>';
       return;
     }
-    remindersList.innerHTML = reminders.map((r, i) => `
+    remindersList.innerHTML = reminders.map((r) => `
       <div class="reminder-item">
         <div>
           <p>${r.text}</p>
-          <div class="meta">${r.time}</div>
+          <div class="meta">${formatMeta(r)}</div>
         </div>
-        <button data-idx="${i}" class="del-btn" title="Remove">✕</button>
+        <button data-id="${r.id}" class="del-btn" title="Remove">✕</button>
       </div>
     `).join('');
     document.querySelectorAll('.del-btn').forEach(btn=>{
       btn.addEventListener('click', (e)=>{
-        const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
-        reminders.splice(idx,1);
+        const id = parseInt(e.currentTarget.getAttribute('data-id'));
+        const idx = reminders.findIndex(r => r.id === id);
+        if(idx > -1){
+          if(reminders[idx].timeoutId) clearTimeout(reminders[idx].timeoutId);
+          reminders.splice(idx,1);
+        }
         renderReminders();
       });
     });
+  }
+
+  // schedules a real push notification on OneSignal's servers — this fires even if
+  // the tab and browser are closed, as long as the device has push enabled
+  async function scheduleServerPush(text, targetDate){
+    if(!PUSH_CONFIGURED) return false;
+    try{
+      const res = await fetch('https://onesignal.com/api/v1/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
+        },
+        body: JSON.stringify({
+          app_id: ONESIGNAL_APP_ID,
+          included_segments: ['Subscribed Users'],
+          headings: { en: 'Task Vide' },
+          contents: { en: text },
+          send_after: targetDate.toISOString()
+        })
+      });
+      return res.ok;
+    } catch(e){
+      return false;
+    }
   }
 
   setReminderBtn.addEventListener('click', ()=>{
@@ -353,79 +544,13 @@
       setTimeout(()=> taskInput.style.borderColor = '', 700);
       return;
     }
+
+    const dtVal = reminderDateTime.value; // "" if user left it blank
     const now = new Date();
-    reminders.unshift({
-      text: val,
-      time: 'Set at ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
-    });
-    renderReminders();
-    taskInput.value = '';
+    let targetDate = null;
+    let targetLabel = 'Set at ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
-    // browser notification, best-effort, non-blocking
-    if('Notification' in window){
-      if(Notification.permission === 'granted'){
-        new Notification('Task Vide reminder set ✨', { body: val });
-      } else if(Notification.permission !== 'denied'){
-        Notification.requestPermission();
-      }
-    }
-
-    thanksOverlay.classList.add('show');
-  });
-
-  closeThanks.addEventListener('click', ()=> thanksOverlay.classList.remove('show'));
-  goFeedback.addEventListener('click', ()=>{
-    thanksOverlay.classList.remove('show');
-    setTimeout(()=>{
-      feedbackCard.scrollIntoView({behavior:'smooth', block:'center'});
-      feedbackInput.focus();
-    }, 200);
-  });
-
-  // ---- feedback box (submits to Formspree) ----
-  const FORMSPREE_ID = 'mgawdqro';
-
-  sendFeedbackBtn.addEventListener('click', async ()=>{
-    const val = feedbackInput.value.trim();
-    if(!val){
-      feedbackInput.focus();
-      feedbackInput.style.borderColor = '#f472b6';
-      setTimeout(()=> feedbackInput.style.borderColor = '', 700);
-      return;
-    }
-
-    sendFeedbackBtn.disabled = true;
-    sendFeedbackBtn.textContent = 'Sending...';
-
-    try{
-      const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
-        method: 'POST',
-        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: userName,
-          message: val
-        })
-      });
-
-      if(res.ok){
-        feedbackInput.value = '';
-        feedbackNote.textContent = 'Thanks for the feedback — really appreciated! 💜';
-        feedbackNote.style.color = '';
-      } else {
-        feedbackNote.textContent = 'Something went wrong sending that — please try again.';
-        feedbackNote.style.color = '#f472b6';
-      }
-    } catch(err){
-      feedbackNote.textContent = 'Could not reach the server — check your connection and try again.';
-      feedbackNote.style.color = '#f472b6';
-    }
-
-    feedbackNote.style.display = 'block';
-    sendFeedbackBtn.disabled = false;
-    sendFeedbackBtn.textContent = 'Send feedback';
-    setTimeout(()=> feedbackNote.style.display = 'none', 4500);
-  });
-</script>
-</body>
-</html>
->
+    if(dtVal){
+      targetDate = new Date(dtVal);
+      if(isNaN(targetDate.getTime()) || targetDate.getTime() <= now.getTime()){
+        reminderNote.textContent = '⚠️ Please pick a date and tim
