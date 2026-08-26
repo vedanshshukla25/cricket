@@ -575,4 +575,24 @@
     taskInput.value = '';
     reminderDateTime.value = '';
 
-    thank
+    thanksOverlay.classList.add('show');
+  });
+
+  // Modal actions
+  closeThanks.addEventListener('click', ()=> thanksOverlay.classList.remove('show'));
+  goFeedback.addEventListener('click', ()=>{
+    thanksOverlay.classList.remove('show');
+    feedbackCard.scrollIntoView({ behavior: 'smooth' });
+    feedbackInput.focus();
+  });
+
+  sendFeedbackBtn.addEventListener('click', ()=>{
+    const fb = feedbackInput.value.trim();
+    if(!fb) return;
+    feedbackInput.value = '';
+    feedbackNote.style.display = 'block';
+    setTimeout(()=> feedbackNote.style.display = 'none', 4000);
+  });
+</script>
+</body>
+</html>
