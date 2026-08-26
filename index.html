@@ -6,7 +6,7 @@
 <title>Task Vide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" defer></script>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <style>
   :root{
     --bg-1: #0a0a1a;
@@ -553,4 +553,4 @@
     if(dtVal){
       targetDate = new Date(dtVal);
       if(isNaN(targetDate.getTime()) || targetDate.getTime() <= now.getTime()){
-        reminderNote.textContent = '⚠️ Please pick a date and tim
+        reminderNote.textContent = '⚠️ Please pick a
