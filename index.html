@@ -1,572 +1,403 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Task Vide</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<!-- OneSignal Web Push SDK -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<style>
-  :root{
-    --bg-1: #0a0a1a;
-    --bg-2: #170f2e;
-    --violet: #8b5cf6;
-    --cyan: #22d3ee;
-    --pink: #f472b6;
-    --glass: rgba(255,255,255,0.055);
-    --glass-brd: rgba(255,255,255,0.12);
-    --text: #f3f1fb;
-    --muted: #9a93b8;
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  Bell,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  Clock3,
+  Coffee,
+  MessageCircle,
+  Plus,
+  Sparkles,
+  Trash2,
+  X,
+  Zap,
+} from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+
+// Replace this with your Formspree endpoint, e.g. https://formspree.io/f/abcd1234.
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/mgawdqro";
+
+type ReminderSound = "chime" | "bell" | "pulse" | "none";
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
+
+type Reminder = {
+  id: number;
+  text: string;
+  when: string;
+  notified: boolean;
+  createdAt: string;
+};
+
+const funnyLines = [
+  "Because future-you is still waiting for a little backup.",
+  "Your brain called. It would like a second storage device.",
+  "Tiny reminder, huge main-character energy.",
+  "One less thing for your brain to juggle today.",
+];
+
+function formatReminderTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No time set";
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function getInitialReminders(): Reminder[] {
+  try {
+    return JSON.parse(localStorage.getItem("task-vibe-reminders") || "[]");
+  } catch {
+    return [];
   }
-  *{box-sizing:border-box; margin:0; padding:0;}
-  html,body{height:100%;}
-  body{
-    font-family:'Inter', sans-serif;
-    color:var(--text);
-    background:
-      radial-gradient(circle at 15% 20%, rgba(139,92,246,0.25), transparent 40%),
-      radial-gradient(circle at 85% 15%, rgba(34,211,238,0.18), transparent 45%),
-      radial-gradient(circle at 50% 100%, rgba(244,114,182,0.12), transparent 50%),
-      linear-gradient(160deg, var(--bg-1), var(--bg-2));
-    min-height:100vh;
-    overflow-x:hidden;
-    position:relative;
-  }
-  h1,h2,h3,.brand,.clock-time{ font-family:'Space Grotesk', sans-serif; }
+}
 
-  .orb{ position:fixed; border-radius:50%; filter:blur(70px); opacity:.35; pointer-events:none; z-index:0; }
-  .orb1{ width:280px; height:280px; background:var(--violet); top:-80px; left:-60px; animation: drift 14s ease-in-out infinite; }
-  .orb2{ width:320px; height:320px; background:var(--cyan); bottom:-100px; right:-80px; animation: drift 18s ease-in-out infinite reverse; }
-  @keyframes drift{ 0%,100%{ transform:translateY(0) translateX(0);} 50%{ transform:translateY(30px) translateX(20px);} }
+function getDeviceId() {
+  const key = "task-vibe-device-id";
+  const existing = localStorage.getItem(key);
+  if (existing) return existing;
+  const created = crypto.randomUUID();
+  localStorage.setItem(key, created);
+  return created;
+}
 
-  .watermark{
-    position:fixed;
-    top:14px;
-    left:50%;
-    transform:translateX(-50%);
-    z-index:40;
-    font-family:'Space Grotesk', sans-serif;
-    font-size:12px;
-    letter-spacing:2.5px;
-    text-transform:uppercase;
-    padding:6px 16px;
-    border-radius:999px;
-    color:var(--muted);
-    background:var(--glass);
-    border:1px solid var(--glass-brd);
-    backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
-    user-select:none;
-  }
-  .watermark span{
-    background:linear-gradient(90deg, var(--violet), var(--cyan));
-    -webkit-background-clip:text;
-    background-clip:text;
-    color:transparent;
-    font-weight:700;
-  }
+function decodeVapidKey(value: string) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(window.atob(base64), (character) => character.charCodeAt(0));
+}
 
-  .app{
-    position:relative;
-    z-index:1;
-    max-width:560px;
-    margin:0 auto;
-    padding:80px 20px 60px;
-    display:none;
-  }
-  .app.show{ display:block; animation: fadeUp .5s ease; }
-  @keyframes fadeUp{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+function playReminderSound(sound: ReminderSound) {
+  if (sound === "none") return;
+  try {
+    const AudioContextCtor =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextCtor) return;
 
-  header.hero{ text-align:center; margin-bottom:20px; }
-  .eyebrow{
-    font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--cyan);
-    display:inline-block; margin-bottom:10px;
-  }
-  h1.greet{
-    font-size:26px; line-height:1.35; font-weight:600;
-    background:linear-gradient(90deg, #fff, #cabdfa);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-  }
-  .sub{ color:var(--muted); font-size:14px; margin-top:8px; }
+    const context = new AudioContextCtor();
+    const gain = context.createGain();
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 1.15);
+    gain.connect(context.destination);
 
-  .clock-widget {
-    background: var(--glass);
-    border: 1px solid var(--glass-brd);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-radius: 16px;
-    padding: 12px 20px;
-    margin: 0 auto 24px auto;
-    width: fit-content;
-    min-width: 220px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-  }
-  .clock-time {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    background: linear-gradient(90deg, var(--cyan), var(--violet));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .clock-date {
-    font-size: 12px;
-    color: var(--muted);
-    letter-spacing: 0.5px;
-    margin-top: 2px;
-    text-transform: uppercase;
-  }
-
-  .card{
-    background:var(--glass);
-    border:1px solid var(--glass-brd);
-    border-radius:20px;
-    padding:22px;
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    box-shadow:0 8px 30px rgba(0,0,0,0.35);
-    margin-bottom:22px;
-  }
-  .card h2{ font-size:15px; font-weight:600; margin-bottom:14px; letter-spacing:.3px; }
-
-  textarea, input[type=text]{
-    width:100%;
-    background:rgba(255,255,255,0.05);
-    border:1px solid rgba(255,255,255,0.14);
-    border-radius:12px;
-    padding:13px 14px;
-    color:var(--text);
-    font-family:'Inter', sans-serif;
-    font-size:14px;
-    resize:none;
-    outline:none;
-    transition:border-color .2s, box-shadow .2s;
-  }
-  textarea::placeholder, input::placeholder{ color:#716a90; }
-  textarea:focus, input:focus{
-    border-color:var(--violet);
-    box-shadow:0 0 0 3px rgba(139,92,246,0.25);
-  }
-  #taskInput{ min-height:90px; }
-  #feedbackInput{ min-height:130px; }
-
-  .field-label{
-    display:block;
-    font-size:12px;
-    color:var(--muted);
-    margin:14px 0 8px;
-    letter-spacing:.3px;
-  }
-  input[type=datetime-local]{
-    color-scheme: dark;
-    font-family:'Inter', sans-serif;
-    width:100%;
-    background:rgba(255,255,255,0.05);
-    border:1px solid rgba(255,255,255,0.14);
-    border-radius:12px;
-    padding:13px 14px;
-    color:var(--text);
-  }
-
-  .toast{
-    position:fixed;
-    left:50%;
-    bottom:26px;
-    transform:translateX(-50%) translateY(20px);
-    z-index:200;
-    min-width:260px;
-    max-width:90vw;
-    background:linear-gradient(135deg, rgba(139,92,246,0.95), rgba(34,211,238,0.9));
-    color:#0a0a1a;
-    padding:14px 18px;
-    border-radius:14px;
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:600;
-    font-size:14px;
-    box-shadow:0 12px 40px rgba(0,0,0,0.45);
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .3s ease, transform .3s ease;
-  }
-  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
-  .toast .toast-label{ font-size:10px; letter-spacing:2px; text-transform:uppercase; opacity:.7; display:block; margin-bottom:2px; }
-
-  .row{ display:flex; gap:10px; margin-top:14px; }
-
-  .btn{
-    border:none;
-    cursor:pointer;
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:600;
-    font-size:14px;
-    padding:12px 20px;
-    border-radius:12px;
-    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
-  }
-  .btn:active{ transform:scale(0.97); }
-  .btn-primary{
-    background:linear-gradient(90deg, var(--violet), var(--cyan));
-    color:#0a0a1a;
-    box-shadow:0 6px 20px rgba(139,92,246,0.35);
-    flex:1;
-  }
-  .btn-primary:hover{ box-shadow:0 8px 26px rgba(139,92,246,0.5); }
-  .btn-ghost{
-    background:transparent;
-    border:1px solid var(--glass-brd);
-    color:var(--text);
-  }
-  .btn-ghost:hover{ background:rgba(255,255,255,0.06); }
-  .btn-small{ padding:8px 14px; font-size:12px; }
-
-.reminder-item{
-    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
-    padding:12px 14px;
-    background:rgba(255,255,255,0.04);
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:12px;
-    margin-bottom:10px;
-    animation: fadeUp .35s ease;
-  }
-  .reminder-item p{ font-size:14px; line-height:1.4; }
-  .reminder-item .meta{ font-size:11px; color:var(--muted); margin-top:4px; }
-  .reminder-item button{
-    background:none; border:none; color:var(--pink); cursor:pointer; font-size:16px; line-height:1;
-  }
-  .empty-state{ color:var(--muted); font-size:13px; text-align:center; padding:10px 0; }
-
-  .overlay{
-    position:fixed; inset:0; z-index:100;
-    background:rgba(6,4,18,0.72);
-    backdrop-filter:blur(6px);
-    -webkit-backdrop-filter:blur(6px);
-    display:flex; align-items:center; justify-content:center;
-    padding:20px;
-    opacity:0; pointer-events:none;
-    transition:opacity .25s ease;
-  }
-  .overlay.show{ opacity:1; pointer-events:auto; }
-  .modal{
-    width:100%; max-width:380px;
-    background:linear-gradient(160deg, rgba(30,20,55,0.9), rgba(15,10,35,0.9));
-    border:1px solid var(--glass-brd);
-    border-radius:22px;
-    padding:30px 26px;
-    text-align:center;
-    box-shadow:0 20px 60px rgba(0,0,0,0.55);
-    transform:translateY(10px) scale(.97);
-    transition:transform .25s ease;
-  }
-  .overlay.show .modal{ transform:translateY(0) scale(1); }
-  .modal .glyph{
-    width:52px; height:52px; margin:0 auto 16px;
-    border-radius:16px;
-    background:linear-gradient(135deg, var(--violet), var(--cyan));
-    display:flex; align-items:center; justify-content:center;
-    font-size:22px;
-  }
-  .modal h2{ font-size:19px; margin-bottom:6px; }
-  .modal p.desc{ color:var(--muted); font-size:13px; margin-bottom:18px; line-height:1.5; }
-  .modal input{ text-align:center; margin-bottom:16px; }
-  .modal .actions{ display:flex; flex-direction:column; gap:10px; }
-
-  footer.note{
-    text-align:center; font-size:11px; color:var(--muted); margin-top:10px; letter-spacing:.5px;
-  }
-
-  @media (max-width:420px){
-    .app{ padding-top:70px; }
-    h1.greet{ font-size:22px; }
-  }
-</style>
-</head>
-<body>
-
-  <div class="orb orb1"></div>
-  <div class="orb orb2"></div>
-
-  <div class="watermark">by <span>vedanshxcode</span></div>
-
-  <div class="overlay show" id="nameOverlay">
-    <div class="modal">
-      <div class="glyph">✨</div>
-      <h2>Welcome to Task Vide</h2>
-      <p class="desc">A calm little space to remember what matters. What should I call you?</p>
-      <input type="text" id="nameInput" placeholder="Your name" maxlength="24" autofocus>
-      <div class="actions">
-        <button class="btn btn-primary" id="closeNameModal">Continue</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="overlay" id="thanksOverlay">
-    <div class="modal">
-      <div class="glyph">🙏</div>
-      <h2>Reminder set!</h2>
-      <p class="desc">Don't forget to leave feedback — it helps <strong>vedansh</strong> a lot to improve. Thank you!!</p>
-      <div class="actions">
-        <button class="btn btn-primary" id="goFeedback">Give feedback</button>
-        <button class="btn btn-ghost btn-small" id="closeThanks">Maybe later</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="toast" id="toast">
-    <span class="toast-label">Task Vide reminder</span>
-    <span id="toastText"></span>
-  </div>
-
-  <div class="app" id="mainApp">
-    <header class="hero">
-      <span class="eyebrow">Task Vide</span>
-      <h1 class="greet" id="greetLine">Hey! What do you want to remember today??</h1>
-      <p class="sub">Type it below and set a reminder — I'll keep it right here for you.</p>
-    </header>
-
-    <div class="clock-widget">
-      <div class="clock-time" id="clockTime">00:00:00 AM</div>
-      <div class="clock-date" id="clockDate">Loading date...</div>
-    </div>
-
-    <section class="card">
-      <h2>💭 What should I remember?</h2>
-      <textarea id="taskInput" placeholder="e.g. Call mom, submit the report, drink water..."></textarea>
-      <label class="field-label" for="reminderDateTime">When should I remind you?</label>
-      <input type="datetime-local" id="reminderDateTime">
-      <div class="row">
-        <button class="btn btn-primary" id="setReminderBtn">Set Reminder</button>
-      </div>
-      <p class="sub" id="reminderNote" style="margin-top:10px; display:none;"></p>
-    </section>
-
-    <section class="card">
-      <h2>📌 Your reminders</h2>
-      <div id="remindersList">
-        <p class="empty-state">Nothing yet — add your first one above.</p>
-      </div>
-    </section>
-
-    <section class="card" id="feedbackCard">
-      <h2>💬 Feedback</h2>
-      <textarea id="feedbackInput" placeholder="Tell vedansh what you loved, hated, or want to see next..."></textarea>
-      <div class="row">
-        <button class="btn btn-primary" id="sendFeedbackBtn">Send feedback</button>
-      </div>
-      <p class="sub" id="feedbackNote" style="margin-top:10px; display:none;">Thanks for the feedback — really appreciated! 💜</p>
-    </section>
-
-    <footer class="note">made with 🤍 — vedanshxcode</footer>
-  </div>
-
-<script>
-  const ONESIGNAL_APP_ID = '2a9969d4-d351-4e97-8615-de5342cda310';
-
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  window.OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: ONESIGNAL_APP_ID,
-      allowLocalhostAsSecureOrigin: true
-    });
-  });
-
-  let userName = "there";
-
-  const nameOverlay = document.getElementById('nameOverlay');
-  const nameInput = document.getElementById('nameInput');
-  const closeNameModal = document.getElementById('closeNameModal');
-  const mainApp = document.getElementById('mainApp');
-  const greetLine = document.getElementById('greetLine');
-
-  const taskInput = document.getElementById('taskInput');
-  const reminderDateTime = document.getElementById('reminderDateTime');
-  const setReminderBtn = document.getElementById('setReminderBtn');
-  const remindersList = document.getElementById('remindersList');
-  const reminderNote = document.getElementById('reminderNote');
-  const toast = document.getElementById('toast');
-  const toastText = document.getElementById('toastText');
-
-  const thanksOverlay = document.getElementById('thanksOverlay');
-  const closeThanks = document.getElementById('closeThanks');
-  const goFeedback = document.getElementById('goFeedback');
-
-  const feedbackInput = document.getElementById('feedbackInput');
-  const sendFeedbackBtn = document.getElementById('sendFeedbackBtn');
-  const feedbackNote = document.getElementById('feedbackNote');
-  const feedbackCard = document.getElementById('feedbackCard');
-
-  function updateClock() {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const dateStr = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-    document.getElementById('clockTime').textContent = timeStr;
-    document.getElementById('clockDate').textContent = dateStr;
-  }
-  setInterval(updateClock, 1000);
-  updateClock();
-
-  let reminders = [];
-  let nextId = 1;
-
-  function showToast(text){
-    toastText.textContent = text;
-    toast.classList.add('show');
-    setTimeout(()=> toast.classList.remove('show'), 6000);
-  }
-
-  function fireReminder(reminderObj){
-    if (reminderObj.status === "failed") return;
-
-    let shownNatively = false;
-
-    if('Notification' in window && Notification.permission === 'granted'){
-      try{
-        const n = new Notification('Task Vide', {
-          body: reminderObj.text,
-          requireInteraction: true
-        });
-        n.onclick = () => { window.focus(); n.close(); };
-        shownNatively = true;
-      } catch(e){ shownNatively = false; }
-    }
-
-    if(navigator.vibrate){ navigator.vibrate([120, 60, 120]); }
-    if(!shownNatively){ showToast(reminderObj.text); }
-
-    reminderObj.status = "sent";
-    renderReminders();
-  }
-
-  async function startApp(){
-    const val = nameInput.value.trim();
-    if(val) userName = val;
-    greetLine.textContent = `Hey ${userName}! What do you want to remember today??`;
-    nameOverlay.classList.remove('show');
-    setTimeout(()=> mainApp.classList.add('show'), 150);
-
-    // Request native permission via OneSignal SDK safely
-    if (window.OneSignalDeferred) {
-      window.OneSignalDeferred.push(async function(OneSignal) {
-        try {
-          await OneSignal.Notifications.requestPermission();
-        } catch(e) {}
-      });
-    }
-  }
-  closeNameModal.addEventListener('click', startApp);
-  nameInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') startApp(); });
-
-  function formatMeta(r){
-    if(r.status === "failed") return '❌ Notification Blocked (Allow notifications in browser)';
-    if(r.status === "sent") return '✅ Notified at ' + r.targetLabel;
-    if(r.targetDate) return '🔔 Active — Scheduled for ' + r.targetLabel;
-    return r.targetLabel;
-  }
-
-  function renderReminders(){
-    if(reminders.length === 0){
-      remindersList.innerHTML = '<p class="empty-state">Nothing yet — add your first one above.</p>';
-      return;
-    }
-    remindersList.innerHTML = reminders.map((r) => `
-      <div class="reminder-item">
-        <div>
-          <p>${r.text}</p>
-          <div class="meta" style="${r.status === 'failed' ? 'color:#f472b6; font-weight:600;' : ''}">${formatMeta(r)}</div>
-        </div>
-        <button data-id="${r.id}" class="del-btn" title="Remove">✕</button>
-      </div>
-    `).join('');
-    document.querySelectorAll('.del-btn').forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
-        const id = parseInt(e.currentTarget.getAttribute('data-id'));
-        const idx = reminders.findIndex(r => r.id === id);
-        if(idx > -1){
-          if(reminders[idx].timeoutId) clearTimeout(reminders[idx].timeoutId);
-          reminders.splice(idx,1);
-        }
-        renderReminders();
-      });
-    });
-  }
-
-  setReminderBtn.addEventListener('click', async ()=>{
-    const val = taskInput.value.trim();
-    if(!val){
-      taskInput.focus();
-      taskInput.style.borderColor = '#f472b6';
-      setTimeout(()=> taskInput.style.borderColor = '', 700);
-      return;
-    }
-
-    const dtVal = reminderDateTime.value;
-    const now = new Date();
-    let targetDate = null;
-    let targetLabel = 'Set at ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-    if(dtVal){
-      targetDate = new Date(dtVal);
-      if(isNaN(targetDate.getTime()) || targetDate.getTime() <= now.getTime()){
-        reminderNote.style.display = 'block';
-        reminderNote.textContent = '⚠️ Please pick a future date and time.';
-        return;
-      }
-      targetLabel = targetDate.toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-    }
-
-    reminderNote.style.display = 'none';
-
-    // Verify browser notification status
-    let permissionGranted = false;
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-        permissionGranted = true;
-      } else if (Notification.permission !== 'denied') {
-        const res = await Notification.requestPermission();
-        if (res === 'granted') permissionGranted = true;
-      }
-    }
-
-    const reminderObj = {
-      id: nextId++,
-      text: val,
-      targetDate: targetDate,
-      targetLabel: targetLabel,
-      status: permissionGranted ? "pending" : "failed",
-      timeoutId: null
+    const frequencies: Record<Exclude<ReminderSound, "none">, number[]> = {
+      chime: [659.25, 783.99],
+      bell: [523.25, 659.25, 783.99],
+      pulse: [392, 392, 392],
     };
+    const notes = frequencies[sound];
+    const noteSpacing = sound === "pulse" ? 0.1 : 0.16;
+    notes.forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      oscillator.type = sound === "bell" ? "triangle" : "sine";
+      oscillator.frequency.value = frequency;
+      oscillator.connect(gain);
+      oscillator.start(context.currentTime + index * noteSpacing);
+      oscillator.stop(context.currentTime + 0.62 + index * noteSpacing);
+    });
 
-    if(targetDate && permissionGranted){
-      const delay = targetDate.getTime() - now.getTime();
-      reminderObj.timeoutId = setTimeout(()=> fireReminder(reminderObj), delay);
+    window.setTimeout(() => void context.close(), 1500);
+  } catch {
+    // A reminder still appears as a toast/notification if audio is unavailable.
+  }
+}
+
+export default function Home() {
+  const [name, setName] = useState(() => localStorage.getItem("task-vibe-name") || "");
+  const [nameDraft, setNameDraft] = useState("");
+  const [showNameGate, setShowNameGate] = useState(() => !localStorage.getItem("task-vibe-name"));
+  const [reminders, setReminders] = useState<Reminder[]>(getInitialReminders);
+  const [reminderText, setReminderText] = useState("");
+  const [reminderWhen, setReminderWhen] = useState("");
+  const [now, setNow] = useState(() => new Date());
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [sound, setSound] = useState<ReminderSound>(() => (localStorage.getItem("task-vibe-sound") as ReminderSound) || "chime");
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [funnyLine] = useState(() => funnyLines[Math.floor(Math.random() * funnyLines.length)]);
+  const deviceId = useMemo(() => getDeviceId(), []);
+  const remoteReminders = trpc.reminders.list.useQuery({ deviceId });
+  const pushPublicKey = trpc.push.publicKey.useQuery();
+  const createRemoteReminder = trpc.reminders.create.useMutation();
+  const removeRemoteReminder = trpc.reminders.remove.useMutation();
+  const subscribePush = trpc.push.subscribe.useMutation();
+
+  useEffect(() => {
+    if (remoteReminders.data && remoteReminders.data.length > 0) {
+      setReminders(remoteReminders.data.map((item) => ({
+        id: item.id,
+        text: item.text,
+        when: new Date(item.dueAt).toISOString(),
+        notified: Boolean(item.notifiedAt),
+        createdAt: new Date(item.createdAt).toISOString(),
+      })));
     }
+  }, [remoteReminders.data]);
 
-    reminders.push(reminderObj);
-    renderReminders();
+  const dateLabel = useMemo(
+    () => new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(now),
+    [now],
+  );
+  const timeLabel = useMemo(
+    () => new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" }).format(now),
+    [now],
+  );
 
-    taskInput.value = '';
-    reminderDateTime.value = '';
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
 
-    thanksOverlay.classList.add('show');
-  });
+  useEffect(() => {
+    localStorage.setItem("task-vibe-reminders", JSON.stringify(reminders));
+  }, [reminders]);
 
-  closeThanks.addEventListener('click', ()=> thanksOverlay.classList.remove('show'));
-  goFeedback.addEventListener('click', ()=>{
-    thanksOverlay.classList.remove('show');
-    feedbackCard.scrollIntoView({ behavior: 'smooth' });
-    feedbackInput.focus();
-  });
+  useEffect(() => {
+    localStorage.setItem("task-vibe-sound", sound);
+  }, [sound]);
 
-  sendFeedbackBtn.addEventListener('click', ()=>{
-    const fb = feedbackInput.value.trim();
-    if(!fb) return;
-    feedbackInput.value = '';
-    feedbackNote.style.display = 'block';
-    setTimeout(()=> feedbackNote.style.display = 'none', 4000);
-  });
-</script>
-</body>
-</html>
+  useEffect(() => {
+    const captureInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", captureInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
+  }, []);
+
+  useEffect(() => {
+    const checkDue = () => {
+      const current = Date.now();
+      setReminders((items) =>
+        items.map((item) => {
+          const due = new Date(item.when).getTime();
+          if (!item.notified && due <= current) {
+            playReminderSound(sound);
+            if ("Notification" in window && Notification.permission === "granted") {
+              new Notification("Task Vibe reminder", { body: item.text, icon: "/favicon.ico" });
+            }
+            toast.success("Reminder time", { description: item.text });
+            return { ...item, notified: true };
+          }
+          return item;
+        }),
+      );
+    };
+    const interval = window.setInterval(checkDue, 1000);
+    checkDue();
+    return () => window.clearInterval(interval);
+  }, [sound]);
+
+  async function installApp() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  }
+
+  async function ensurePushSubscription() {
+    if (!pushPublicKey.data || !("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+    const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+    if (permission !== "granted") return false;
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: decodeVapidKey(pushPublicKey.data),
+      });
+    }
+    const json = subscription.toJSON();
+    if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) return false;
+    await subscribePush.mutateAsync({ deviceId, endpoint: json.endpoint, keys: { p256dh: json.keys.p256dh, auth: json.keys.auth } });
+    return true;
+  }
+
+  function saveName(event: FormEvent) {
+    event.preventDefault();
+    const cleanName = nameDraft.trim();
+    if (!cleanName) return;
+    localStorage.setItem("task-vibe-name", cleanName);
+    setName(cleanName);
+    setShowNameGate(false);
+    toast.success(`Welcome, ${cleanName}!`, { description: "Your tiny memory sidekick is ready." });
+  }
+
+  async function addReminder(event: FormEvent) {
+    event.preventDefault();
+    if (!reminderText.trim()) {
+      toast.error("Give your reminder a little something to remember.");
+      return;
+    }
+    const when = reminderWhen || new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16);
+    if (new Date(when).getTime() <= Date.now()) {
+      toast.error("Pick a moment in the future.");
+      return;
+    }
+    let pushReady = false;
+    try {
+      pushReady = await ensurePushSubscription();
+    } catch {
+      pushReady = false;
+    }
+    const localReminder: Reminder = { id: Date.now(), text: reminderText.trim(), when: new Date(when).toISOString(), notified: false, createdAt: new Date().toISOString() };
+    if (pushReady) {
+      try {
+        const saved = await createRemoteReminder.mutateAsync({ deviceId, text: localReminder.text, dueAt: localReminder.when, sound });
+        if (saved) {
+          setReminders((items) => [
+            { id: saved.id, text: saved.text, when: new Date(saved.dueAt).toISOString(), notified: Boolean(saved.notifiedAt), createdAt: new Date(saved.createdAt).toISOString() },
+            ...items,
+          ]);
+        }
+      } catch {
+        pushReady = false;
+      }
+    }
+    if (!pushReady) setReminders((items) => [localReminder, ...items]);
+    setReminderText("");
+    setReminderWhen("");
+    toast.success("Reminder locked in", { description: pushReady ? `I’ll notify your phone ${formatReminderTime(when)}.` : `Saved locally for ${formatReminderTime(when)}. Install and enable push for closed-app alerts.` });
+  }
+
+  function removeReminder(id: number) {
+    void removeRemoteReminder.mutate({ deviceId, id });
+    setReminders((items) => items.filter((item) => item.id !== id));
+    toast("Reminder removed", { description: "No hard feelings. You can add it back anytime." });
+  }
+
+  async function submitFeedback(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!feedback.trim()) return;
+    setFeedbackSending(true);
+    try {
+      if (FORMSPREE_ENDPOINT.includes("REPLACE_WITH_YOUR_ID")) {
+        await new Promise((resolve) => window.setTimeout(resolve, 650));
+      } else {
+        const response = await fetch(FORMSPREE_ENDPOINT, {
+          method: "POST",
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify({ name, feedback, _subject: `Task Vibe feedback from ${name}` }),
+        });
+        if (!response.ok) throw new Error("Feedback request failed");
+      }
+      setFeedbackSent(true);
+      setFeedback("");
+    } catch {
+      toast.error("Feedback could not be sent", { description: "Please check your Formspree ID and try again." });
+    } finally {
+      setFeedbackSending(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen overflow-hidden px-4 py-5 text-white sm:px-6 lg:px-8">
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
+      <div className="ambient ambient-three" />
+      <div className="grain" />
+
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <header className="flex items-center justify-between gap-4 py-2">
+          <div className="brand-lockup">
+            <div className="brand-mark"><Zap size={17} strokeWidth={3} /></div>
+            <div>
+              <div className="brand-name">TASK <span>VIBE</span></div>
+              <div className="brand-caption">remember the little things</div>
+            </div>
+          </div>
+          <div className="clock-chip" aria-label="Current time and date">
+            <Clock3 size={15} />
+            <span className="hidden sm:inline">{dateLabel}</span>
+            <strong>{timeLabel}</strong>
+          </div>
+          {installPrompt && <button className="install-button" onClick={installApp}>Install app</button>}
+        </header>
+
+        <section className="hero-grid">
+          <div className="hero-copy">
+            <div className="eyebrow"><Sparkles size={14} /> your friendly memory sidekick</div>
+            <h1>Hey <span>{name || "there"}</span>! What do you want to remember <em>today?</em></h1>
+            <p>Type it below and set a reminder. I’ll keep it right here for you — because brains are brilliant, but occasionally very busy.</p>
+          </div>
+          <div className="hero-orbit" aria-hidden="true">
+            <div className="orbit-ring ring-a" />
+            <div className="orbit-ring ring-b" />
+            <div className="orbit-core"><Bell size={28} /><span>you’ve got this</span></div>
+          </div>
+        </section>
+
+        <section className="glass-card reminder-card" aria-labelledby="remember-heading">
+          <div className="section-heading">
+            <div className="icon-bubble purple"><MessageCircle size={20} /></div>
+            <div><span className="section-kicker">the important bit</span><h2 id="remember-heading">Hey {name || "friend"}, what should I remember?</h2></div>
+          </div>
+          <form onSubmit={addReminder}>
+            <label className="field-label" htmlFor="reminder">Your reminder</label>
+            <textarea id="reminder" value={reminderText} onChange={(event) => setReminderText(event.target.value)} placeholder="e.g. Call mom, submit the report, drink water…" rows={3} />
+            <div className="field-row">
+              <label className="field-label" htmlFor="when">When should I remind you?</label>
+              <div className="date-field"><CalendarDays size={17} /><input id="when" type="datetime-local" value={reminderWhen} onChange={(event) => setReminderWhen(event.target.value)} /><ChevronDown size={16} /></div>
+            </div>
+            <button className="primary-button" type="submit"><Plus size={20} /> Set reminder <span>↗</span></button>
+          </form>
+          <p className="helper-line"><span className="spark-dot" /> Browser notifications are enabled when you allow them. Keep this tab open for the best vibe.</p>
+          <div className="sound-row">
+            <label htmlFor="sound">Reminder sound</label>
+            <select id="sound" value={sound} onChange={(event) => setSound(event.target.value as ReminderSound)}>
+              <option value="chime">Soft chime</option>
+              <option value="bell">Bright bell</option>
+              <option value="pulse">Triple pulse</option>
+              <option value="none">Silent</option>
+            </select>
+            <button type="button" className="test-sound" onClick={() => playReminderSound(sound)} disabled={sound === "none"}>Test sound</button>
+          </div>
+        </section>
+
+        <section className="glass-card list-card" aria-labelledby="reminders-heading">
+          <div className="section-heading split-heading">
+            <div className="heading-with-icon"><div className="icon-bubble orange"><Bell size={20} /></div><div><span className="section-kicker">your tiny safety net</span><h2 id="reminders-heading">Your reminders <span className="count-pill">{reminders.length}</span></h2></div></div>
+            <div className="status-label"><span /> live & ready</div>
+          </div>
+          {reminders.length === 0 ? (
+            <div className="empty-state"><div className="empty-icon"><Coffee size={23} /></div><p>Your list is gloriously empty.</p><span>That means you can make your first good idea official.</span></div>
+          ) : (
+            <div className="reminder-list">
+              {reminders.map((item) => (
+                <article className={`reminder-item ${item.notified ? "is-done" : ""}`} key={item.id}>
+                  <div className="item-check">{item.notified ? <Check size={16} /> : <span />}</div>
+                  <div className="item-body"><strong>{item.text}</strong><span>{item.notified ? "Notified just now" : `Scheduled for ${formatReminderTime(item.when)}`}</span></div>
+                  <button className="icon-button" onClick={() => removeReminder(item.id)} aria-label={`Delete reminder: ${item.text}`}><Trash2 size={17} /></button>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="feedback-card">
+          <div className="feedback-copy"><div className="icon-bubble cyan"><MessageCircle size={20} /></div><div><span className="section-kicker">help make it better</span><h2>Give a little feedback</h2><p>{funnyLine}</p></div></div>
+          <button className="secondary-button" onClick={() => { setShowFeedback(true); setFeedbackSent(false); }}><MessageCircle size={17} /> Tell Vedansh <span>↗</span></button>
+        </section>
+
+        <footer><span>made for the moments you don’t want to lose</span><strong>VEDANSHXCODES</strong></footer>
+      </div>
+
+      {showNameGate && <div className="modal-backdrop"><form className="welcome-modal" onSubmit={saveName}><div className="modal-spark"><Sparkles size={24} /></div><span className="section-kicker">welcome to task vibe</span><h2>First things first — what should I call you?</h2><p>A name makes every reminder feel a little more personal.</p><input autoFocus value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} placeholder="Your name" maxLength={30} /><button className="primary-button" type="submit">Let’s make it memorable <span>↗</span></button><small>No account. No fuss. Just your reminders, saved on this device.</small></form></div>}
+
+      {showFeedback && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowFeedback(false); }}><div className="feedback-modal"><button className="close-button" onClick={() => setShowFeedback(false)} aria-label="Close feedback"><X size={19} /></button>{feedbackSent ? <div className="success-state"><div className="success-icon"><Check size={30} /></div><span className="section-kicker">message received</span><h2>You just made Task Vibe better.</h2><p>Thanks for helping Vedansh build something useful — and slightly less forgetful.</p><button className="secondary-button" onClick={() => setShowFeedback(false)}>Back to my reminders</button></div> : <form onSubmit={submitFeedback}><div className="modal-spark cyan-spark"><MessageCircle size={23} /></div><span className="section-kicker">a tiny favor</span><h2>Give a feedback so it can help Vedansh a lot.</h2><p>What feels good? What could be smoother? Honest thoughts welcome.</p><textarea autoFocus value={feedback} onChange={(event) => setFeedback(event.target.value)} placeholder="Your thoughts…" rows={5} required /><button className="primary-button" type="submit" disabled={feedbackSending}>{feedbackSending ? "Sending…" : "Send feedback"} <span>↗</span></button><small>Feedback is connected to Formspree.</small></form>}</div></div>}
+    </main>
+  );
+}
+
