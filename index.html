@@ -1,60 +1,938 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b1026">
-  <title>Task Vibe — Remember the little things</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
-    :root{--bg:#090e24;--card:#151d40;--text:#f7f6ff;--muted:#98a3c3;--purple:#a05cff;--cyan:#35d4ee;--pink:#f27abc;--line:rgba(210,220,255,.2)}
-    *{box-sizing:border-box}body{margin:0;min-width:320px;color:var(--text);font-family:Manrope,Arial,sans-serif;background:radial-gradient(circle at 20% 0,#2c2167 0,#0c1535 35%,#070b1d 100%);min-height:100vh}
-    body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.06;background-image:linear-gradient(rgba(255,255,255,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.2) 1px,transparent 1px);background-size:55px 55px}
-    button,input,textarea,select{font:inherit}button{cursor:pointer}main{position:relative;max-width:1100px;margin:auto;padding:22px 18px 40px}.ambient{position:fixed;z-index:-1;border-radius:50%;filter:blur(70px);opacity:.35;pointer-events:none}.a1{width:310px;height:310px;background:#763ee8;top:4%;left:-100px}.a2{width:360px;height:360px;background:#0ab9df;right:-130px;top:35%}
-    header{display:flex;align-items:center;justify-content:space-between;gap:14px}.brand{display:flex;gap:10px;align-items:center}.mark{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#a26bff,#27c9ee);font-size:21px}.brand-name{font:700 16px 'Space Grotesk';letter-spacing:.15em}.brand-name span{color:var(--cyan)}.caption,.kicker,label,.helper,.footer{font:10px 'DM Mono';letter-spacing:.1em;text-transform:uppercase}.caption{color:#929dbf;margin-top:3px}.header-actions{display:flex;align-items:center;gap:8px}.clock,.outline{border:1px solid var(--line);border-radius:12px;background:rgba(16,25,59,.6);color:#c6d1ee;padding:9px 12px;font:11px 'DM Mono'}.outline{color:#bff3ff;border-color:rgba(111,225,255,.35)}
-    .hero{display:grid;grid-template-columns:1fr 230px;align-items:center;gap:50px;padding:70px 6% 50px}.eyebrow,.kicker{color:#b39cff}.eyebrow{font:11px 'DM Mono';letter-spacing:.12em;text-transform:uppercase}.hero h1{font:600 clamp(38px,6vw,74px)/.98 'Space Grotesk';letter-spacing:-.06em;margin:18px 0}.hero h1 span{color:var(--cyan)}.hero h1 em{color:#c4adff;font-style:normal}.hero p{max-width:620px;color:var(--muted);line-height:1.7}.orbit{height:210px;width:210px;border:1px solid rgba(95,220,255,.25);border-radius:50%;display:grid;place-items:center;transform:rotate(25deg) scaleX(.7)}.orbit-inner{transform:rotate(-25deg) scaleX(1.43);display:grid;place-items:center;gap:8px;width:125px;height:125px;border-radius:50%;background:radial-gradient(circle,#55459b,#151c46);border:1px solid #7984c8;color:#75e5ff;text-align:center}.orbit-inner small{color:#c7cdef;font:9px 'DM Mono';text-transform:uppercase}
-    .card,.feedback{border:1px solid var(--line);border-radius:25px;background:linear-gradient(140deg,rgba(33,45,91,.76),rgba(13,20,52,.62));box-shadow:0 22px 60px rgba(0,0,0,.2);backdrop-filter:blur(18px)}.card{padding:clamp(22px,4vw,40px)}.heading{display:flex;gap:12px;align-items:center;margin-bottom:25px}.bubble{display:grid;place-items:center;width:43px;height:43px;border-radius:14px;background:rgba(153,101,255,.18);font-size:21px}.heading h2{font:600 23px 'Space Grotesk';margin:4px 0}.kicker{display:block;font-weight:500}.label{display:block;color:#a9b2d0;margin:18px 0 8px}.input,.date,select{width:100%;border:1px solid rgba(190,207,255,.2);border-radius:15px;outline:0;color:#fff;background:rgba(8,15,40,.62);padding:15px}.input:focus,.date:focus,select:focus{border-color:#65dafa;box-shadow:0 0 0 4px rgba(72,208,255,.08)}textarea{min-height:120px;resize:vertical}.date{color:#fff}.primary{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:23px;border:0;border-radius:15px;padding:15px 17px;color:#091126;font-weight:800;background:linear-gradient(105deg,#a05cff,#687ef4 48%,#2cd2ea);box-shadow:0 12px 30px rgba(68,170,244,.2)}.primary:active,.outline:active,.settings:active{transform:scale(.98)}.helper{text-align:center;color:#8490b2;line-height:1.6;margin:15px 0 0}.sound-row{display:flex;align-items:center;gap:9px;border-top:1px solid #3d4672;margin-top:16px;padding-top:14px}.sound-row label{flex:1;margin:0;color:#adb8d4}.sound-row select{width:auto;padding:8px}.test{background:transparent;border:1px solid #6070aa;border-radius:9px;color:#bfefff;padding:8px 10px;font-size:11px}
-    .list{margin-top:22px}.list-head{display:flex;justify-content:space-between;align-items:center}.live{color:#81e4ad;font:10px 'DM Mono';text-transform:uppercase}.live:before{content:"";display:inline-block;width:7px;height:7px;margin-right:6px;border-radius:50%;background:#65e59c;box-shadow:0 0 10px #65e59c}.reminder-list{display:grid;gap:10px}.item{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid rgba(199,213,255,.16);border-radius:16px;background:rgba(42,56,103,.6)}.check{display:grid;place-items:center;width:28px;height:28px;border:1px solid rgba(168,192,255,.35);border-radius:9px;color:#70e5b0}.item-body{min-width:0;flex:1}.item-body strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.item-body span{display:block;margin-top:5px;color:#9da9ce;font:11px 'DM Mono'}.delete{border:0;background:transparent;color:var(--pink);font-size:25px}.empty{text-align:center;border:1px dashed rgba(173,193,255,.25);border-radius:16px;padding:27px;color:#9da9ce}.feedback{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:22px;padding:24px}.feedback p{color:#aab5d2;font:11px 'DM Mono'}.footer{display:flex;justify-content:space-between;color:#68759a;padding:28px 4px}.footer strong{color:#9274d8;letter-spacing:.2em}
-    .settings{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(111,225,255,.35);border-radius:11px;color:#c3f3ff;background:rgba(40,169,209,.1);padding:9px 11px;font:10px 'DM Mono'}.modal-bg{position:fixed;z-index:20;inset:0;display:grid;place-items:center;padding:20px;background:rgba(3,5,18,.78);backdrop-filter:blur(12px)}.modal{position:relative;width:min(100%,520px);max-height:92vh;overflow:auto;border:1px solid rgba(217,224,255,.28);border-radius:26px;padding:30px;background:linear-gradient(145deg,rgba(30,42,88,.98),rgba(13,20,51,.98));box-shadow:0 30px 100px rgba(0,0,0,.5)}.modal h2{font:600 29px 'Space Grotesk';letter-spacing:-.05em;margin:9px 0}.modal p{color:#a5aece;font-size:13px;line-height:1.6}.close{position:absolute;right:18px;top:16px;border:0;background:transparent;color:var(--pink);font-size:28px}.status{display:flex;align-items:center;gap:12px;border:1px solid rgba(175,198,255,.2);border-radius:16px;padding:14px;background:rgba(8,15,40,.42);margin:18px 0}.status-icon{font-size:22px}.status-copy{flex:1}.status-copy strong,.status-copy span{display:block}.status-copy span{color:#939fc3;font:10px 'DM Mono';line-height:1.5;margin-top:4px}.dot{width:9px;height:9px;border-radius:50%;background:#f0b15e}.dot.good{background:#5ee7a7;box-shadow:0 0 13px #5ee7a7}.details{display:grid;grid-template-columns:1fr 1fr;gap:9px}.detail{border:1px solid rgba(175,198,255,.14);border-radius:13px;padding:12px;color:#87e5f7;font-size:13px}.detail span,.detail strong{display:block}.detail span{color:#858eaf;font:9px 'DM Mono';margin-top:5px}.detail strong{font-size:11px;margin-top:3px}.modal .primary{margin-top:15px}.secondary{width:100%;margin-top:9px;border:1px solid rgba(111,225,255,.4);border-radius:12px;color:#b9f5ff;background:rgba(40,169,209,.1);padding:12px;font-weight:700}.link{display:block;width:100%;border:0;background:transparent;color:#82dff3;padding:10px;font:10px 'DM Mono'}.welcome{text-align:left}.welcome .primary{margin-top:13px}.notice{display:none;margin:10px 0;padding:10px;border-radius:10px;color:#ffd697;background:rgba(240,177,94,.12);font:11px 'DM Mono'}
-    @media(max-width:720px){.hero{grid-template-columns:1fr;padding:55px 2% 35px}.orbit{display:none}.header-actions .settings span{display:none}.clock{padding:8px}.feedback,.footer{flex-direction:column;align-items:flex-start}.details{grid-template-columns:1fr}}
-  </style>
-</head>
-<body>
-  <main><div class="ambient a1"></div><div class="ambient a2"></div>
-    <header><div class="brand"><div class="mark">✦</div><div><div class="brand-name">TASK <span>VIBE</span></div><div class="caption">remember the little things</div></div></div><div class="header-actions"><div class="clock" id="clock">Loading…</div><button class="settings" id="openSettings">⚙ Notifications</button></div></header>
-    <section class="hero"><div><div class="eyebrow">✦ your friendly memory sidekick</div><h1>Hey <span id="heroName">there</span>! What do you want to remember <em>today?</em></h1><p>Type it below and set a reminder. I’ll keep it right here for you — because brains are brilliant, but occasionally very busy.</p></div><div class="orbit"><div class="orbit-inner">🔔<small>you’ve got this</small></div></div></section>
-    <section class="card"><div class="heading"><div class="bubble">💬</div><div><span class="kicker">the important bit</span><h2>Hey <span id="cardName">friend</span>, what should I remember?</h2></div></div><form id="reminderForm"><label for="reminder">Your reminder</label><textarea class="input" id="reminder" placeholder="e.g. Call mom, submit the report, drink water…" required></textarea><label for="when">When should I remind you?</label><input class="date" id="when" type="datetime-local" required><button class="primary">＋ Set reminder <span>↗</span></button></form><div class="helper" id="pushStatus">Enable notifications when you set your first reminder.</div><div class="sound-row"><label for="sound">Reminder sound</label><select id="sound"><option value="chime">Soft chime</option><option value="bell">Bright bell</option><option value="pulse">Triple pulse</option><option value="none">Silent</option></select><button class="test" id="testSound" type="button">Test sound</button></div></section>
-    <section class="card list"><div class="list-head"><div class="heading"><div class="bubble">🔔</div><div><span class="kicker">your tiny safety net</span><h2>Your reminders <span id="count">0</span></h2></div></div><div class="live">live & ready</div></div><div id="reminders"></div></section>
-    <section class="feedback"><div><span class="kicker">help make it better</span><h2>💬 Give a little feedback</h2><p>Your brain called. It would like a second storage device.</p></div><button class="secondary" id="openFeedback">Tell Vedansh ↗</button></section>
-    <div class="footer"><span>made for the moments you don’t want to lose</span><strong>VEDANSHXCODES</strong></div>
-  </main>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#08090d">
+<title>DECIDE — Stop Overthinking</title>
 
-  <div class="modal-bg" id="nameModal"><form class="modal welcome" id="nameForm"><div class="bubble">✦</div><span class="kicker">welcome to task vibe</span><h2>First things first — what should I call you?</h2><p>A name makes every reminder feel a little more personal.</p><input class="input" id="nameInput" placeholder="Your name" maxlength="30" required><button class="primary">Let’s make it memorable <span>↗</span></button><small class="helper">No account. No fuss. Just your reminders, saved on this device.</small></form></div>
-  <div class="modal-bg" id="settingsModal" hidden><section class="modal"><button class="close" data-close="settingsModal">×</button><div class="bubble">🔔</div><span class="kicker">device controls</span><h2>Notification settings</h2><p>Check whether Task Vibe can notify you after you close the shortcut.</p><div class="status"><div class="status-icon">🛡️</div><div class="status-copy"><strong id="settingsTitle">Notifications need setup</strong><span id="settingsCopy">Allow permission, then enable the device subscription.</span></div><div class="dot" id="statusDot"></div></div><div class="details"><div class="detail">Permission<span id="permissionValue">Not requested</span></div><div class="detail">Push subscription<span id="subscriptionValue">Not connected</span></div></div><button class="primary" id="allowNotifications">Allow notifications <span>↗</span></button><button class="secondary" id="testNotification">🔔 Send test notification</button><button class="link" id="refreshStatus">↻ Refresh status</button><button class="link" id="settingsHelp">Open Android/browser settings</button><div class="notice" id="settingsNotice"></div><small class="helper">After changing Android permission, return here and tap Refresh status.</small></section></div>
-  <div class="modal-bg" id="feedbackModal" hidden><section class="modal"><button class="close" data-close="feedbackModal">×</button><div class="bubble">💬</div><span class="kicker">a tiny favor</span><h2>Give feedback so it can help Vedansh a lot.</h2><p>What feels good? What could be smoother? Honest thoughts welcome.</p><form id="feedbackForm"><textarea class="input" id="feedback" placeholder="Your thoughts…" required></textarea><button class="primary">Send feedback <span>↗</span></button></form></section></div>
-  <script>
-    const ENDPOINT='https://formspree.io/f/mgawdqro';
-    const $=id=>document.getElementById(id);
-    let name=localStorage.getItem('task-vibe-name')||'';
-    let reminders=JSON.parse(localStorage.getItem('task-vibe-reminders')||'[]');
-    let permission='default', subscription=false;
-    const funny=['Your brain called. It would like a second storage device.','Tiny reminder, huge main-character energy.','One less thing for your brain to juggle today.'];
-    function updateName(){ $('heroName').textContent=name||'there';$('cardName').textContent=name||'friend';$('nameModal').hidden=!!name }
-    function save(){localStorage.setItem('task-vibe-reminders',JSON.stringify(reminders));}
-    function format(value){return new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(value))}
-    function render(){ $('count').textContent=reminders.length; const box=$('reminders'); if(!reminders.length){box.innerHTML='<div class="empty">☕<br><strong>Your list is gloriously empty.</strong><br><small>Make your first good idea official.</small></div>';return} box.innerHTML=reminders.map(r=>`<article class="item"><div class="check">${r.notified?'✓':'·'}</div><div class="item-body"><strong>${escapeHtml(r.text)}</strong><span>${r.notified?'Notified just now':'Scheduled for '+format(r.when)}</span></div><button class="delete" data-delete="${r.id}">×</button></article>`).join(''); box.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{reminders=reminders.filter(r=>r.id!==b.dataset.delete);save();render()}) }
-    function escapeHtml(s){return s.replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-    function updateClock(){const d=new Date();$('clock').textContent=d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})+' · '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})}
-    function playSound(kind){if(kind==='none')return; try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),g=c.createGain();g.connect(c.destination);g.gain.setValueAtTime(.001,c.currentTime);g.gain.exponentialRampToValueAtTime(.18,c.currentTime+.03);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+1);({chime:[659,784],bell:[523,659,784],pulse:[392,392,392]}[kind]||[659]).forEach((f,i)=>{const o=c.createOscillator();o.frequency.value=f;o.type=kind==='bell'?'triangle':'sine';o.connect(g);o.start(c.currentTime+i*.15);o.stop(c.currentTime+.6+i*.15)});setTimeout(()=>c.close(),1400)}catch(e){}}
-    function showNotification(text){if(permission==='granted'&&'Notification'in window&&'serviceWorker'in navigator){navigator.serviceWorker.ready.then(r=>r.showNotification('Task Vibe reminder',{body:text,icon:'/favicon.ico',tag:'task-vibe-reminder'})).catch(()=>{})}}
-    async function refresh(){if(!('Notification'in window)){permission='unsupported';subscription=false}else permission=Notification.permission;if('serviceWorker'in navigator&&'PushManager'in window){try{const r=await navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});await r.update();subscription=!!(await r.pushManager.getSubscription())}catch(e){subscription=false}} updateSettings()}
-    function updateSettings(){const active=permission==='granted'&&subscription;$('permissionValue').textContent=permission==='unsupported'?'Unsupported':permission==='granted'?'Allowed':permission==='denied'?'Blocked':'Not requested';$('subscriptionValue').textContent=subscription?'Connected':'Not connected';$('settingsTitle').textContent=active?'Notifications are active':permission==='denied'?'Notifications are blocked':permission==='unsupported'?'Notifications unavailable':'Notifications need setup';$('settingsCopy').textContent=active?'Phone reminders can arrive while Task Vibe is closed.':permission==='denied'?'Allow notifications in Android or browser settings.':permission==='unsupported'?'Use Chrome on Android or a supported browser.':'Allow permission, then enable the device subscription.';$('statusDot').className='dot '+(active?'good':'');$('pushStatus').textContent=active?'Phone notifications are active — you can close the shortcut.':permission==='blocked'||permission==='denied'?'Notifications are blocked. Allow them in Chrome/Android settings, then reload.':'Enable notifications when you set your first reminder.'}
-    $('nameForm').onsubmit=e=>{e.preventDefault();name=$('nameInput').value.trim();if(!name)return;localStorage.setItem('task-vibe-name',name);updateName()};
-    $('reminderForm').onsubmit=async e=>{e.preventDefault();if(!permission||permission!=='granted'){await requestPermission();if(permission!=='granted'){alert('Allow notifications first in Notification Settings.');return}}const text=$('reminder').value.trim(),when=new Date($('when').value);if(!text||isNaN(when)||when<=new Date()){alert('Choose a future time.');return}reminders.unshift({id:String(Date.now()),text,when:when.toISOString(),notified:false});save();render();$('reminder').value='';$('when').value='';alert('Reminder saved. Task Vibe will notify you at '+format(when));};
-    async function requestPermission(){if(!('Notification'in window)){permission='unsupported';updateSettings();return}permission=await Notification.requestPermission();if(permission==='granted'&&'serviceWorker'in navigator){try{const r=await navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'});subscription=!!(await r.pushManager.getSubscription())}catch(e){}}updateSettings()}
-    $('allowNotifications').onclick=requestPermission;$('testNotification').onclick=async()=>{await requestPermission();if(permission==='granted'){showNotification('Nice — your Task Vibe notifications are working.');alert('Test notification sent.')}};$('refreshStatus').onclick=refresh;$('settingsHelp').onclick=()=>{ $('settingsNotice').style.display='block';$('settingsNotice').textContent='Android: Settings → Notifications → App notifications → Chrome → Allow notifications. Then return and tap Refresh status.'};$('testSound').onclick=()=>playSound($('sound').value);
-    $('openSettings').onclick=()=>{$('settingsModal').hidden=false;refresh()};$('openFeedback').onclick=()=>{$('feedbackModal').hidden=false};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).hidden=true);$('feedbackForm').onsubmit=async e=>{e.preventDefault();const response=await fetch(ENDPOINT,{method:'POST',headers:{Accept:'application/json','Content-Type':'application/json'},body:JSON.stringify({name,feedback:$('feedback').value,_subject:'Task Vibe feedback'})});if(response.ok){$('feedback').value='';$('feedbackModal').hidden=true;alert('Thanks for helping Vedansh!')}else alert('Feedback could not be sent.')};
-    setInterval(()=>{updateClock();const now=Date.now();let changed=false;reminders=reminders.map(r=>{if(!r.notified&&new Date(r.when)<=now){r.notified=true;changed=true;playSound($('sound').value);showNotification(r.text);alert('Task Vibe reminder: '+r.text)}return r});if(changed){save();render()}},1000);updateClock();updateName();render();refresh();
-  </script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080c;
+  --panel:#101219;
+  --panel2:#151722;
+  --border:#252938;
+  --text:#f7f7fb;
+  --muted:#858b9d;
+  --purple:#8b5cf6;
+  --cyan:#22d3ee;
+  --pink:#ec4899;
+  --green:#34d399;
+}
+html{scroll-behavior:smooth}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 15% 10%,rgba(139,92,246,.16),transparent 28%),
+    radial-gradient(circle at 85% 25%,rgba(34,211,238,.10),transparent 25%),
+    var(--bg);
+  color:var(--text);
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  overflow-x:hidden;
+}
+body:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:45px 45px;
+  mask-image:linear-gradient(to bottom,black,transparent);
+}
+button,input{font:inherit}
+button{cursor:pointer}
+
+.container{
+  width:min(1100px,calc(100% - 30px));
+  margin:auto;
+}
+
+/* HERO */
+.hero{
+  text-align:center;
+  padding:65px 0 38px;
+}
+.logo{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  font-size:clamp(40px,8vw,76px);
+  font-weight:950;
+  letter-spacing:-.07em;
+  line-height:.95;
+}
+.logo-dot{
+  width:13px;
+  height:13px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--purple),var(--cyan));
+  box-shadow:0 0 25px rgba(139,92,246,.8);
+}
+.hero h2{
+  margin-top:20px;
+  font-size:clamp(17px,3vw,25px);
+  font-weight:500;
+  color:#d9dbe4;
+}
+.hero p{
+  max-width:580px;
+  margin:12px auto 0;
+  color:var(--muted);
+  line-height:1.6;
+}
+.brand{
+  display:inline-block;
+  margin-top:20px;
+  padding:7px 13px;
+  border:1px solid #292d3a;
+  border-radius:999px;
+  color:#aeb3c1;
+  font-size:11px;
+  letter-spacing:.2em;
+  font-weight:900;
+}
+
+/* SECTION */
+.section-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  gap:15px;
+  margin:28px 0 14px;
+}
+.section-title h3{
+  font-size:20px;
+}
+.section-title span{
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* CARDS */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+}
+.card{
+  position:relative;
+  min-height:150px;
+  padding:19px;
+  border:1px solid var(--border);
+  border-radius:21px;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.012)),
+    var(--panel);
+  transition:.28s ease;
+  overflow:hidden;
+}
+.card:before{
+  content:"";
+  position:absolute;
+  width:100px;
+  height:100px;
+  right:-50px;
+  top:-50px;
+  background:var(--purple);
+  opacity:.09;
+  filter:blur(30px);
+}
+.card:hover{
+  transform:translateY(-5px);
+  border-color:#454b60;
+  box-shadow:0 18px 50px rgba(0,0,0,.3);
+}
+.icon{
+  width:43px;
+  height:43px;
+  display:grid;
+  place-items:center;
+  border-radius:14px;
+  background:#1a1d28;
+  font-size:21px;
+  margin-bottom:20px;
+}
+.card h4{font-size:16px}
+.card p{
+  margin-top:6px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.4;
+}
+.card button{
+  position:absolute;
+  inset:0;
+  border:0;
+  background:transparent;
+  color:transparent;
+}
+
+/* APP PANEL */
+.app{
+  margin:35px 0;
+  padding:25px;
+  border:1px solid var(--border);
+  border-radius:28px;
+  background:
+    linear-gradient(145deg,rgba(139,92,246,.06),rgba(34,211,238,.025)),
+    var(--panel);
+  box-shadow:0 30px 90px rgba(0,0,0,.28);
+}
+.app-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:20px;
+}
+.app-head h3{font-size:21px}
+.close{
+  width:40px;
+  height:40px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#171a23;
+  color:white;
+  font-size:20px;
+}
+.hidden{display:none!important}
+
+/* INPUTS */
+.form{
+  display:flex;
+  gap:9px;
+}
+input{
+  flex:1;
+  min-width:0;
+  background:#090b10;
+  border:1px solid var(--border);
+  color:white;
+  border-radius:14px;
+  padding:14px 15px;
+  outline:none;
+}
+input:focus{
+  border-color:#7256ca;
+  box-shadow:0 0 0 3px rgba(139,92,246,.08);
+}
+.primary{
+  border:0;
+  border-radius:14px;
+  padding:13px 19px;
+  color:white;
+  font-weight:850;
+  background:linear-gradient(135deg,var(--purple),#6366f1);
+  box-shadow:0 8px 25px rgba(99,102,241,.2);
+  transition:.2s;
+}
+.primary:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.primary:active{transform:scale(.95)}
+.secondary{
+  border:1px solid var(--border);
+  background:#181b24;
+  color:white;
+  border-radius:14px;
+  padding:13px 18px;
+  font-weight:800;
+}
+.secondary:hover{background:#202431}
+
+/* OPTIONS */
+.options{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  margin:16px 0;
+}
+.option{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:9px 12px 9px 14px;
+  border:1px solid var(--border);
+  background:#171a22;
+  border-radius:999px;
+  animation:pop .3s ease both;
+}
+.option button{
+  border:0;
+  background:transparent;
+  color:#747b8c;
+  font-size:17px;
+}
+
+/* RESULT */
+.result{
+  margin-top:20px;
+  padding:28px 20px;
+  border:1px solid #34394a;
+  border-radius:22px;
+  text-align:center;
+  background:
+    radial-gradient(circle at 50% 0,rgba(139,92,246,.16),transparent 50%),
+    #0d0f15;
+  display:none;
+}
+.result.show{
+  display:block;
+  animation:reveal .6s cubic-bezier(.2,.8,.2,1);
+}
+.result-label{
+  color:var(--muted);
+  font-size:11px;
+  letter-spacing:.2em;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.result-value{
+  margin-top:10px;
+  font-size:clamp(28px,7vw,48px);
+  font-weight:950;
+  letter-spacing:-.04em;
+  background:linear-gradient(90deg,#fff,var(--cyan),#fff);
+  background-size:200%;
+  -webkit-background-clip:text;
+  color:transparent;
+  animation:shine 2s linear infinite;
+}
+
+/* TEAM */
+.team-format{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:15px;
+}
+.format{
+  border:1px solid var(--border);
+  background:#12151d;
+  color:#9da3b4;
+  border-radius:11px;
+  padding:10px 14px;
+  font-weight:800;
+}
+.format.active{
+  color:white;
+  border-color:#7357cb;
+  background:rgba(139,92,246,.18);
+}
+.team-input{
+  display:flex;
+  gap:8px;
+}
+.team-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:15px 0;
+}
+.team-player{
+  padding:9px 13px;
+  border-radius:999px;
+  background:#181b24;
+  border:1px solid var(--border);
+}
+.team-player button{
+  border:0;
+  background:none;
+  color:#777d8c;
+  margin-left:5px;
+}
+.teams{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:18px;
+}
+.team-box{
+  padding:18px;
+  border-radius:19px;
+  background:#141720;
+  border:1px solid var(--border);
+}
+.team-box h4{margin-bottom:10px}
+.team-box.a h4{color:#a78bfa}
+.team-box.b h4{color:#67e8f9}
+.team-member{
+  padding:10px;
+  border-radius:11px;
+  background:#0b0d12;
+  margin-top:7px;
+  font-weight:800;
+  animation:slide .4s ease both;
+}
+
+/* FOOTER */
+footer{
+  text-align:center;
+  padding:35px 0 50px;
+  color:#606777;
+  font-size:11px;
+  letter-spacing:.18em;
+  font-weight:800;
+}
+footer strong{
+  color:#9ba1b0;
+}
+
+/* TOAST */
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:25px;
+  transform:translate(-50%,20px);
+  background:#181b24;
+  border:1px solid #34394a;
+  padding:12px 17px;
+  border-radius:13px;
+  font-size:13px;
+  opacity:0;
+  pointer-events:none;
+  transition:.3s;
+  z-index:10;
+}
+.toast.show{
+  opacity:1;
+  transform:translate(-50%,0);
+}
+
+/* ANIMATIONS */
+@keyframes pop{
+ from{opacity:0;transform:scale(.8)}
+ to{opacity:1;transform:none}
+}
+@keyframes reveal{
+ from{opacity:0;transform:translateY(15px) scale(.96)}
+ to{opacity:1;transform:none}
+}
+@keyframes shine{
+ to{background-position:200%}
+}
+@keyframes slide{
+ from{opacity:0;transform:translateX(-12px)}
+ to{opacity:1;transform:none}
+}
+
+@media(max-width:850px){
+ .grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:560px){
+ .container{width:min(100% - 20px,1100px)}
+ .hero{padding-top:40px}
+ .grid{grid-template-columns:1fr 1fr}
+ .card{min-height:140px;padding:15px}
+ .app{padding:17px;border-radius:22px}
+ .form,.team-input{flex-direction:column}
+ .primary,.secondary{width:100%}
+ .teams{grid-template-columns:1fr}
+}
+@media(max-width:360px){
+ .grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ *{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header class="hero">
+  <div class="logo">
+    DECIDE<span class="logo-dot"></span>
+  </div>
+  <h2>Stop overthinking. Let randomness decide.</h2>
+  <p>
+    Can't decide what to eat, watch, wear, play or where to go?
+    Pick a section and let DECIDE make the call.
+  </p>
+  <div class="brand">✦ VEDXCODES</div>
+</header>
+
+<section>
+  <div class="section-title">
+    <h3>Daily Decisions</h3>
+    <span>Pick your confusion</span>
+  </div>
+
+  <div class="grid">
+
+    <div class="card" data-tool="quick">
+      <div class="icon">🎲</div>
+      <h4>Quick Decision</h4>
+      <p>Can't choose between a few options?</p>
+      <button aria-label="Open Quick Decision"></button>
+    </div>
+
+    <div class="card" data-tool="food">
+      <div class="icon">🍔</div>
+      <h4>What Should I Eat?</h4>
+      <p>Let DECIDE choose your meal.</p>
+      <button aria-label="Open Food Decision"></button>
+    </div>
+
+    <div class="card" data-tool="watch">
+      <div class="icon">🎬</div>
+      <h4>What Should I Watch?</h4>
+      <p>Movie, series, anime or YouTube?</p>
+      <button aria-label="Open Watch Decision"></button>
+    </div>
+
+    <div class="card" data-tool="wear">
+      <div class="icon">👕</div>
+      <h4>What Should I Wear?</h4>
+      <p>Give your outfit options to fate.</p>
+      <button aria-label="Open Outfit Decision"></button>
+    </div>
+
+    <div class="card" data-tool="cricket">
+      <div class="icon">🏏</div>
+      <h4>Cricket Teams</h4>
+      <p>Random 1v1 to 5v5 team formation.</p>
+      <button aria-label="Open Cricket Teams"></button>
+    </div>
+
+    <div class="card" data-tool="first">
+      <div class="icon">👥</div>
+      <h4>Who Goes First?</h4>
+      <p>Randomly pick someone from the group.</p>
+      <button aria-label="Open Who Goes First"></button>
+    </div>
+
+    <div class="card" data-tool="pays">
+      <div class="icon">💸</div>
+      <h4>Who Pays?</h4>
+      <p>Let fate choose the lucky friend.</p>
+      <button aria-label="Open Who Pays"></button>
+    </div>
+
+    <div class="card" data-tool="place">
+      <div class="icon">📍</div>
+      <h4>Where Should We Go?</h4>
+      <p>Pick a random place from your list.</p>
+      <button aria-label="Open Where Should We Go"></button>
+    </div>
+
+    <div class="card" data-tool="custom">
+      <div class="icon">✨</div>
+      <h4>Custom Decision</h4>
+      <p>Create your own decision.</p>
+      <button aria-label="Open Custom Decision"></button>
+    </div>
+
+  </div>
+</section>
+
+<section id="app" class="app hidden">
+
+  <div class="app-head">
+    <h3 id="appTitle">Decision</h3>
+    <button class="close" id="closeApp">×</button>
+  </div>
+
+  <div id="normalTool">
+
+    <div class="form">
+      <input id="optionInput" placeholder="Type an option...">
+      <button class="primary" id="addOption">Add</button>
+    </div>
+
+    <div id="options" class="options"></div>
+
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="primary" id="decide">⚡ Decide</button>
+      <button class="secondary" id="clearOptions">Clear</button>
+    </div>
+
+    <div class="result" id="result">
+      <div class="result-label">The decision is</div>
+      <div class="result-value" id="resultValue">—</div>
+    </div>
+
+  </div>
+
+  <div id="cricketTool" class="hidden">
+
+    <div class="section-title" style="margin-top:0">
+      <h3>🏏 Random Team Formation</h3>
+      <span>Completely random</span>
+    </div>
+
+    <div class="team-format">
+      <button class="format active" data-format="1">1v1</button>
+      <button class="format" data-format="2">2v2</button>
+      <button class="format" data-format="3">3v3</button>
+      <button class="format" data-format="4">4v4</button>
+      <button class="format" data-format="5">5v5</button>
+    </div>
+
+    <div class="team-input">
+      <input id="playerInput" placeholder="Enter player name...">
+      <button class="primary" id="addPlayer">Add Player</button>
+    </div>
+
+    <div id="playerList" class="team-list"></div>
+
+    <button class="primary" id="makeTeams">⚡ Make Random Teams</button>
+
+    <div id="teamResult" class="teams hidden">
+      <div class="team-box a">
+        <h4>TEAM A</h4>
+        <div id="teamA"></div>
+      </div>
+
+      <div class="team-box b">
+        <h4>TEAM B</h4>
+        <div id="teamB"></div>
+      </div>
+    </div>
+
+  </div>
+
+</section>
+
+<footer>
+  DECIDE · <strong>VEDXCODES</strong> · MADE FOR THE OVERTHINKERS
+</footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+
+const app = document.getElementById("app");
+const appTitle = document.getElementById("appTitle");
+const normalTool = document.getElementById("normalTool");
+const cricketTool = document.getElementById("cricketTool");
+const optionInput = document.getElementById("optionInput");
+const optionsEl = document.getElementById("options");
+const result = document.getElementById("result");
+const resultValue = document.getElementById("resultValue");
+const toast = document.getElementById("toast");
+
+let options = JSON.parse(localStorage.getItem("decideOptions") || "[]");
+let currentTool = "quick";
+let players = [];
+let teamSize = 1;
+
+const presets = {
+  food:["Pizza","Burger","Momos","Biryani","Pasta","Sandwich"],
+  watch:["Movie","Series","Anime","YouTube","Documentary"],
+  wear:["Casual","Streetwear","Denim","Sporty","Traditional"],
+  first:["Player 1","Player 2","Player 3","Player 4"],
+  pays:["Friend 1","Friend 2","Friend 3","Friend 4"],
+  place:["Cafe","Park","Mall","Gaming Zone","Food Street"]
+};
+
+const titles = {
+  quick:"Quick Decision",
+  food:"🍔 What Should I Eat?",
+  watch:"🎬 What Should I Watch?",
+  wear:"👕 What Should I Wear?",
+  first:"👥 Who Goes First?",
+  pays:"💸 Who Pays?",
+  place:"📍 Where Should We Go?",
+  custom:"✨ Custom Decision"
+};
+
+function showToast(message){
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => toast.classList.remove("show"),1800);
+}
+
+function save(){
+  localStorage.setItem("decideOptions",JSON.stringify(options));
+}
+
+function renderOptions(){
+
+  optionsEl.innerHTML="";
+
+  options.forEach((item,index)=>{
+
+    const div=document.createElement("div");
+    div.className="option";
+
+    const text=document.createElement("span");
+    text.textContent=item;
+
+    const remove=document.createElement("button");
+    remove.type="button";
+    remove.textContent="×";
+
+    remove.onclick=()=>{
+      options.splice(index,1);
+      save();
+      renderOptions();
+    };
+
+    div.append(text,remove);
+    optionsEl.appendChild(div);
+
+  });
+}
+
+function addOption(){
+
+  const value=optionInput.value.trim();
+
+  if(!value){
+    showToast("Enter an option first");
+    return;
+  }
+
+  if(options.includes(value)){
+    showToast("That option already exists");
+    return;
+  }
+
+  if(options.length>=20){
+    showToast("Maximum 20 options");
+    return;
+  }
+
+  options.push(value);
+  optionInput.value="";
+  save();
+  renderOptions();
+  optionInput.focus();
+}
+
+function decide(){
+
+  if(options.length<2){
+    showToast("Add at least 2 options");
+    return;
+  }
+
+  result.classList.remove("show");
+
+  const randomIndex=Math.floor(Math.random()*options.length);
+  const winner=options[randomIndex];
+
+  resultValue.textContent="Choosing...";
+
+  void result.offsetWidth;
+  result.classList.add("show");
+
+  let ticks=0;
+
+  const interval=setInterval(()=>{
+
+    resultValue.textContent=
+      options[Math.floor(Math.random()*options.length)];
+
+    ticks++;
+
+    if(ticks>=12){
+      clearInterval(interval);
+      resultValue.textContent=winner;
+    }
+
+  },90);
+}
+
+function openTool(tool){
+
+  currentTool=tool;
+  app.classList.remove("hidden");
+  appTitle.textContent=titles[tool] || "Decision";
+
+  if(tool==="cricket"){
+    normalTool.classList.add("hidden");
+    cricketTool.classList.remove("hidden");
+    renderPlayers();
+  }else{
+    cricketTool.classList.add("hidden");
+    normalTool.classList.remove("hidden");
+
+    if(presets[tool]){
+      options=[...presets[tool]];
+    }else if(tool==="quick" || tool==="custom"){
+      options=[];
+    }
+
+    save();
+    renderOptions();
+  }
+
+  app.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+document.querySelectorAll(".card").forEach(card=>{
+  card.addEventListener("click",()=>{
+    openTool(card.dataset.tool);
+  });
+});
+
+document.getElementById("closeApp").onclick=()=>{
+  app.classList.add("hidden");
+};
+
+document.getElementById("addOption").onclick=addOption;
+
+optionInput.addEventListener("keydown",e=>{
+  if(e.key==="Enter") addOption();
+});
+
+document.getElementById("decide").onclick=decide;
+
+document.getElementById("clearOptions").onclick=()=>{
+  options=[];
+  save();
+  renderOptions();
+  result.classList.remove("show");
+};
+
+function renderPlayers(){
+
+  const list=document.getElementById("playerList");
+  list.innerHTML="";
+
+  players.forEach((player,index)=>{
+
+    const item=document.createElement("div");
+    item.className="team-player";
+
+    const name=document.createElement("span");
+    name.textContent=player;
+
+    const remove=document.createElement("button");
+    remove.textContent="×";
+
+    remove.onclick=()=>{
+      players.splice(index,1);
+      renderPlayers();
+    };
+
+    item.append(name,remove);
+    list.appendChild(item);
+  });
+}
+
+document.getElementById("addPlayer").onclick=()=>{
+
+  const input=document.getElementById("playerInput");
+  const name=input.value.trim();
+
+  if(!name){
+    showToast("Enter player name");
+    return;
+  }
+
+  if(players.includes(name)){
+    showToast("Player already added");
+    return;
+  }
+
+  if(players.length>=10){
+    showToast("Maximum 10 players");
+    return;
+  }
+
+  players.push(name);
+  input.value="";
+  renderPlayers();
+  input.focus();
+};
+
+document.getElementById("playerInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    document.getElementById("addPlayer").click();
+  }
+});
+
+document.querySelectorAll(".format").forEach(button=>{
+
+  button.onclick=()=>{
+
+    document.querySelectorAll(".format")
+      .forEach(x=>x.classList.remove("active"));
+
+    button.classList.add("active");
+
+    teamSize=Number(button.dataset.format);
+
+    document.getElementById("teamResult")
+      .classList.add("hidden");
+  };
+
+});
+
+document.getElementById("makeTeams").onclick=()=>{
+
+  if(players.length<teamSize*2){
+
+    showToast(`Need ${teamSize*2} players for ${teamSize}v${teamSize}`);
+    return;
+  }
+
+  const shuffled=[...players];
+
+  for(let i=shuffled.length-1;i>0;i--){
+
+    const j=Math.floor(Math.random()*(i+1));
+
+    [shuffled[i],shuffled[j]]=
+    [shuffled[j],shuffled[i]];
+  }
+
+  const teamA=shuffled.slice(0,teamSize);
+  const teamB=shuffled.slice(teamSize,teamSize*2);
+
+  const teamResult=document.getElementById("teamResult");
+  const teamAEl=document.getElementById("teamA");
+  const teamBEl=document.getElementById("teamB");
+
+  teamAEl.innerHTML="";
+  teamBEl.innerHTML="";
+
+  teamA.forEach((player,index)=>{
+
+    const div=document.createElement("div");
+    div.className="team-member";
+    div.style.animationDelay=(index*90)+"ms";
+    div.textContent=player;
+    teamAEl.appendChild(div);
+
+  });
+
+  teamB.forEach((player,index)=>{
+
+    const div=document.createElement("div");
+    div.className="team-member";
+    div.style.animationDelay=(index*90)+"ms";
+    div.textContent=player;
+    teamBEl.appendChild(div);
+
+  });
+
+  teamResult.classList.remove("hidden");
+
+  teamResult.animate(
+    [
+      {opacity:0,transform:"translateY(15px) scale(.97)"},
+      {opacity:1,transform:"translateY(0) scale(1)"}
+    ],
+    {duration:500,easing:"cubic-bezier(.2,.8,.2,1)"}
+  );
+
+};
+
+renderOptions();
+
+})(); </script>
+
 </body>
+
 </html>
